@@ -1917,15 +1917,6 @@ def main():
             arrow_angle2=(arrow_fix_sub_angle-sub_b/2+180)%360+1
             arrow_angle1_median=((270+sub_a/2)+(90+sub_a/2))/2
             arrow_angle2_median=(((270-sub_b/2+180)%360+(90-sub_b/2+180)%360)+2)/2
-            #플레이어1
-            angle1_text = font.render(f"Angle1: {int(arrow_angle1)}°", True, RED)
-            angle2_text = font.render(f"Angle2: {int(arrow_angle2)}°", True, BLUE)
-            #텍스트 위치 설정
-            angle1_pos = (screenw // 4 - angle1_text.get_width() // 2, screenh // 2 - angle1_text.get_height() // 2)
-            angle2_pos = (3 * screenw // 4 - angle2_text.get_width() // 2, screenh // 2 - angle2_text.get_height() // 2)
-            #텍스트 화면에 그리기
-            screen.blit(angle1_text, angle1_pos)
-            screen.blit(angle2_text, angle2_pos)
             if is_skill_active[0]:#Q0X skill0 key[pygame.K_x]
                 beeline_skill0(screen, 0,skillimg[player1_select][0],skillimg[player2_select][0],0,player_rect1,player_rect2,(arrow_angle1,arrow_angle2),player1_select,player2_select)
             if is_skill_active[1]:#W1C key[pygame.K_c]
