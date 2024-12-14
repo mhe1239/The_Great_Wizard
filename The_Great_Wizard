@@ -116,31 +116,31 @@ player_chat_img=[#scalar,theta,dalta,chi,vector
     pygame.transform.scale(pygame.image.load("pygame_application_project/wind_vector.png"),(470,500))
 ]
 fire_skill=[#playersize 60,60 
-    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_fire_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/fire_1.png"),(720,270)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/fire_2.png"),(30,30)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/fire_3.png"),(170,210))
 ]
 lightning_skill=[
-    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_lightning_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_1c.png"),(80,80)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_2.png"),(300,300)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_3.png"),(200,200))
 ]
 ground_skill=[
-    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_ground_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/ground_1.png"),(720,270)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/ground_2.png"),(80,80)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/ground_3.png"),(((screen_center[0])-(screen_center[0]//5)*1-uiout*1),screenh-uiout*5))
 ]
 ice_skill=[
-    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_ice_0.png"),((screenh-uiout*3),((screenh-uiout*3))//2)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_0.png"),((screenh-uiout*3),((screenh-uiout*3))//2)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/ice_1.png"),(80,80)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/ice_2.png"),(screenw//2-uiout*3,screenh-uiout*6)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/ice_3.png"),(screenh//2-uiout*2,screenh//2-uiout*2))
 ]
 wind_skill=[
-    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_wind_0.png"),((screenh-uiout*3),((screenh-uiout*3))//2)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_0.png"),((screenh-uiout*3),((screenh-uiout*3))//2)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/wind_1.png"),(80,100)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/wind_2.png"),(20,40)),
     pygame.transform.scale(pygame.image.load("pygame_application_project/wind_3sc.png"),(screenw//2-uiout*2,screenh-uiout*2))
