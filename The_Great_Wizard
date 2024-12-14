@@ -1,0 +1,2512 @@
+import pygame
+import sys
+import math
+import random
+WHITE=(255,255,255)
+LIGHTNING_COLOR=(255,255,0)
+BLACK=(0,0,0)
+RED=(255,0,0)
+GREEN=(0,255,0)
+BLUE=(0,0,255)
+LBLUE=(0,192,255)
+PINK=(255,0,224)
+GRAY=(128,128,128)
+LIGHT_GRAY=(200,200,200)
+TRANSLUCENT_LIGHT_GRAY=(100,200,200)
+SKILL_TRUE_COLOR=(1,255,255)
+SKILL_FALSE_COLOR=(255,127,1)
+LIGHT_BLUE=(173,216,230)
+LIGHT_GREEN=(144,238,144)
+SKILL_BACKGROUND_COLOR=(237,215,169)
+BEIGE=(245,245,220)
+PEACH=(255,228,196)
+MINT=(189,252,201)
+LIGHT_BROWN=(222,184,135)
+YELLOW=(255,243,79)#yellow
+SILVER = (192, 208, 224)
+TITLE_BUTTON=(66,133,244)
+fps=80#프레임
+game_screen_index=0
+timer_fps,timer_dis,time_cnt,time_display_cnt=[[0 for __ in range(4)] for _ in range(2)],[[0 for __ in range(4)] for _ in range(2)],[[0 for __ in range(4)] for _ in range(2)],[[0 for __ in range(4)] for _ in range(2)]
+screenw, screenh = 1440, 810#스크린 16:9
+screen_center = (screenw // 2, screenh // 2)
+game_screen_index=0#게임 화면 인덱스(0: title 1: 게임 설명 2: 게임 설정 3: 종료 4: 캐릭터1,2 선택 5: 전투 6: 이야기1 7: 이야기2 ㆍㆍㆍ)
+#16:9 1000,800, n=15
+uiout,uiw,uih,uipol=30,400,100,70#UI outline/스킬 UI 조정 변수1,2/삼각형 밑변
+hpuiw1,hpuih1=400,30#HP UI 조정 변수
+hpw1,hph1=50,20#HP UI 조정 변수
+hpuiw2,hpuih2=400,30#HP UI 조정 변수
+hpw2,hph2=50,20#HP UI 조정 변수
+skillw,skilladjustment=70,30# 스킬 원의 너비,원 위치 조정값
+x_pos1,y_pos1=90,screenh//2#플레이어1 좌표
+x_pos2,y_pos2=screenw-90,screenh//2#플레이어2 좌표
+keys = [#플레이어1,2 스킬 키
+    ['X', 'C', 'V', 'B'],
+    ['U', 'I', 'O', 'P']
+]
+player1_select,player2_select=None,None#플레이어1,2  선택 저장 변수
+# player1_select
+# player2_select
+
+skill_txt_color=[SKILL_FALSE_COLOR,SKILL_TRUE_COLOR]#스킬 사용 가능/불가능 표시
+TFskill_txt_color=skill_txt_color[0]
+start_time=None
+skilltxtoutput=[[0 for __ in range(4)] for _ in range(2)]
+skill_select_txt=[#스킬 선택 텍스트(캐릭터/캐릭터 이름/나라/나라 대표 보석)    
+    ["불","번개","땅","얼음","바람"],#속성
+    #fire,lightning,ground,ice,wind
+    ["스칼라","세타","델타","카이","벡터"],#이름
+    #scalar,theta,dalta,chi,vector
+    ["플레미아","라이트니아","그라운디아","아이시아","윈데아"],
+    #"flamia," "Lightnia," "Groundia," "Icia," "Windea"
+    ["루비","블루 사파이어","옐로우 토파즈", "그린 다이아몬드","진주","블랙 오팔"],
+    #"ruby","blue_sapphire","yellow_topaz","green_diamond","pearl","black_opal"
+    [(255,0,0),(0,0,255),(230, 200, 140),(135,206,235),(144,238,144)]
+]
+character_color=[#스킬 선택시 캐릭터 대표 색상
+    (255,0,0),#붉은색
+    (0,0,255),#파란색
+    (230, 200, 140),#연한 갈색
+    (135,206,235),#하늘색
+    (144,238,144)#연두색
+]
+#✔
+# select_skill=[#스킬 초
+#     [4,7,10,20],#fire 불
+#     [4,7,10,20],#lightning 번개
+#     [4,7,10,20],#ground 땅
+#     [4,7,10,20],#ice 얼음
+#     [4,7,10,20],#wind 바람
+# ]
+select_skill=[#스킬 초
+    [1,2,3,5],#fire 불
+    [1,2,3,5],#lightning 번개
+    [1,2,3,4],#ground 땅
+    [1,2,3,4],#ice 얼음
+    [1,2,3,4],#wind 바람
+]
+select_skill_basket=[#선택한 플레이어1,2에 대한 스킬 배치
+    select_skill[0][0],#player1 X
+    select_skill[0][1],#C
+    select_skill[0][2],#V
+    select_skill[0][3],#B
+    select_skill[0][3],#player2 U
+    select_skill[0][2],#I
+    select_skill[0][1],#O
+    select_skill[0][0],#P
+]
+skill_second=[[0 for __ in range(4)] for _ in range(2)]
+skill_cool_times = {# 쿨타임 시간 설정, (플레이어,스킬): 스킬초
+    (0, 0): select_skill_basket[0],#X
+    (0, 1): select_skill_basket[1],#C
+    (0, 2): select_skill_basket[2],#V
+    (0, 3): select_skill_basket[3],#B
+    (1, 0): select_skill_basket[4],#U
+    (1, 1): select_skill_basket[5],#I
+    (1, 2): select_skill_basket[6],#O
+    (1, 3): select_skill_basket[7] #P
+}
+# player_skill_direction=[0,0]#플레이어 스킬 방출 방향(각도)
+# player_skill_direction_angle=[0,0]
+# player_skill_direction_angle_index=[0,0]
+# player_skill_direction_angle_index_cnt=[0,0]
+# player_skill_direction_angle_index_cnt_max=3
+# player_skill_direction_angle_index_cnt_delay=50
+# player_skill_direction_angle_index_cnt_delay_max=3
+# player_skill_direction_angle_index_cnt_delay_cnt=0
+# playerimg=[#pygame.transform.scale(pygame.image.load("pygame_application_project/fire_0.png"),(20,20))
+#     pygame.transform.scale(pygame.image.load("pygame_application_project/player1.png"),(player_character_sizew,player_character_sizeh)),#플레이어 1 이미지, 오른쪽
+#     pygame.transform.scale(pygame.image.load("pygame_application_project/player2.png"),(player_character_sizew,player_character_sizeh))#플레이어 2 이미지, 왼쪽
+# ]
+# player_img=[#scalar,theta,dalta,chi,vector
+#     pygame.transform.scale(pygame.image.load("pygame_application_project/fire_scalar.png"),(400,500)),
+#     pygame.transform.scale(pygame.image.load("pygame_application_project/ground_dalta.png"),(300,500)),
+#     pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_theta.png"),(220,500)),
+#     pygame.transform.scale(pygame.image.load("pygame_application_project/ice_chi.png"),(400,500)),
+#     pygame.transform.scale(pygame.image.load("pygame_application_project/wind_vector.png"),(470,500))
+# ]
+player_character_sizew,player_character_sizeh=80,80#플레이어 이미지 크기
+player_img=[#scalar,theta,dalta,chi,vector
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_scalar.png"),(60,70)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_theta.png"),(50,80)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_dalta.png"),(50,70)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_chi.png"),(70,85)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_vector.png"),(80,80))
+]
+
+player_chat_img=[#scalar,theta,dalta,chi,vector
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_scalar.png"),(400,500)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_theta.png"),(220,500)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_dalta.png"),(300,500)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_chi.png"),(400,500)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_vector.png"),(470,500))
+]
+fire_skill=[#playersize 60,60 
+    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_fire_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_1.png"),(720,270)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_2.png"),(30,30)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_3.png"),(170,210))
+]
+lightning_skill=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_lightning_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_1c.png"),(80,80)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_2.png"),(300,300)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_3.png"),(200,200))
+]
+ground_skill=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_ground_0.png"),((screenh-uiout*3)//3,(screenh-uiout*3)//3)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_1.png"),(720,270)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_2.png"),(80,80)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_3.png"),(((screen_center[0])-(screen_center[0]//5)*1-uiout*1),screenh-uiout*5))
+]
+ice_skill=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_ice_0.png"),((screenh-uiout*3),((screenh-uiout*3))//2)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_1.png"),(80,80)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_2.png"),(screenw//2-uiout*3,screenh-uiout*6)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_3.png"),(screenh//2-uiout*2,screenh//2-uiout*2))
+]
+wind_skill=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/skill_wind_0.png"),((screenh-uiout*3),((screenh-uiout*3))//2)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_1.png"),(80,100)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_2.png"),(20,40)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_3sc.png"),(screenw//2-uiout*2,screenh-uiout*2))
+]
+pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=1024)
+fire_skill_ogg=[
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/fire_0.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/fire_1.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/fire_2.ogg"),  
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/fire_3.ogg")
+]
+lightning_skill_ogg=[
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/lightning_0.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/lightning_1.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/lightning_2.ogg"),  
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/lightning_3.ogg")
+]
+ground_skill_ogg=[
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ground_0.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ground_1.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ground_2.ogg"),  
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ground_3.ogg")
+]
+ice_skill_ogg=[
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ice_0.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ice_1.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ice_2.ogg"),  
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/ice_3.ogg")
+]
+wind_skill_ogg=[
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/wind_0.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/wind_1.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/wind_2.ogg"),  
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/wind_3.ogg")
+]
+skill_ogg=[
+    fire_skill_ogg,
+    lightning_skill_ogg,
+    ground_skill_ogg,
+    ice_skill_ogg,
+    wind_skill_ogg
+]
+background_ogg=[
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/main_way.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/story1_2.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/battle.ogg"),
+    pygame.mixer.Sound("pygame_application_project/a_pygame_project_ogg/story3.ogg")
+]
+"""
+pygame.mixer.music.load( "background.ogg" )
+mySound.play()
+pygame.mixer.music.play(-1)
+pygame.mixer.music.set_voume(0.7)
+pygame.mixer.music.stop()
+sound1 = pygame.mixer.Sound("sound1.ogg")
+sound2 = pygame.mixer.Sound("sound2.ogg")
+
+# 각 사운드 볼륨 설정
+sound1.set_volume(0.3)  # sound1 볼륨 30%
+sound2.set_volume(0.7)  # sound2 볼륨 70%
+sound1 = pygame.mixer.Sound("sound1.ogg"); sound1.set_volume(0.3)
+sound2 = pygame.mixer.Sound("sound2.ogg"); sound2.set_volume(0.7)
+"""
+ui_size=(50,50)
+fire_skill_ui=[#playersize 60,60
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_0.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_1sc.png"),(50,50)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_2.png"),ui_size),
+    pygame.transform.rotate(pygame.transform.scale(pygame.image.load("pygame_application_project/fire_3.png"),(51,68)),-45)
+]
+lightning_skill_ui=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_0.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_1.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_2.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_3.png"),ui_size)
+]
+ground_skill_ui=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_0.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_1.png"),(50,25)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_2.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_3sc.png"),(40,40))
+]
+ice_skill_ui=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_0.png"),(60,30)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_1.png"),(30,60)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_3sc.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_3.png"),ui_size),    
+]
+wind_skill_ui=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_0.png"),(60,30)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_1.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_2.png"),ui_size),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_3sc.png"),ui_size)
+]
+skill0_pos=[
+    fire_skill[0],
+    lightning_skill[0],
+    ground_skill[0],
+    ice_skill[0],
+    wind_skill[0]
+]
+skillimg_ui_wh = {#i= 속성 j=다양성
+    0: [img.get_rect().size for img in skill0_pos]
+}
+
+
+skillimg=[
+    fire_skill,
+    lightning_skill,
+    ground_skill,
+    ice_skill,
+    wind_skill
+]
+skillimg_ui=[
+    fire_skill_ui,
+    lightning_skill_ui,
+    ground_skill_ui,
+    ice_skill_ui,
+    wind_skill_ui
+]
+skillimg_ui_wh = {#i= 속성 j=다양성
+    0: [img.get_rect().size for img in fire_skill_ui],
+    1: [img.get_rect().size for img in lightning_skill_ui],
+    2: [img.get_rect().size for img in ground_skill_ui],
+    3: [img.get_rect().size for img in ice_skill_ui],
+    4: [img.get_rect().size for img in wind_skill_ui]
+}
+playerimg=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_scalar.png"),(60,70)),  #index의 경우 초기화를 위해 임의로 넣은 값
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_theta.png"),(50,80))   #index의 경우 초기화를 위해 임의로 넣은 값
+]
+skill_data = {#각 플레이어별로 스킬 상태를 초기화
+    player: {skill: {'angle': 0, 'start_time': pygame.time.get_ticks()} for skill in range(4)}
+    for player in range(2)
+}
+"""
+skill_data = {#skill_data[player][skill][String]
+    0: {  # player 0
+        0: {'angle': 0, 'start_time': pygame.time.get_ticks()},  # skill 0
+        1: {'angle': 0, 'start_time': pygame.time.get_ticks()},  # skill 1
+        2: {'angle': 0, 'start_time': pygame.time.get_ticks()},  # skill 2
+        3: {'angle': 0, 'start_time': pygame.time.get_ticks()}   # skill 3
+    },
+    1: {  # player 1
+        0: {'angle': 0, 'start_time': pygame.time.get_ticks()},  # skill 0
+        1: {'angle': 0, 'start_time': pygame.time.get_ticks()},  # skill 1
+        2: {'angle': 0, 'start_time': pygame.time.get_ticks()},  # skill 2
+        3: {'angle': 0, 'start_time': pygame.time.get_ticks()}   # skill 3
+    }
+}
+"""
+# player_skill_direction=[
+#     0,
+#     0
+# ]#플레이어 스킬 방출 방향(각도)
+x_velocity1,y_velocity1=4,4#상하좌우 이동속도
+x_velocity2,y_velocity2=4,4#상하좌우 이동속도
+# playerimg_arrow=[
+#     pygame.transform.rotozoom(pygame.image.load("pygame_application_project/player_skill_direction_arrow1.png"),0,(player_sizew,player_sizeh)),#플레이어 1 이미지, 오른쪽
+#     pygame.transform.rotozoom(pygame.image.load("pygame_application_project/player_skill_direction_arrow2.png"),0,(player_sizew,player_sizeh))
+# ]
+
+player_rect1=playerimg[0].get_rect(center=(x_pos1,y_pos1))#x,y 센터에 플레이어1 위치
+player_rect2=playerimg[1].get_rect(center=(x_pos2,y_pos2))#x,y 센터에 플레이어2 위치
+font_type=[#pygame.font.Font(font_type,size)
+    None,
+    'fonts/font1.ttf',#E)굵은 글씨
+    'fonts/font2.ttf',#E)게임 타이틀틱한
+    'arial',
+    'hy견고딕'
+]
+# 선택 결과를 저장할 변수
+select_result = None  # 선택 결과를 임시 저장하는 변수
+select_result_basket = [0 for _ in range(100)]  # 모든 선택 결과를 배열로 저장
+select_result_cnt = 0  # 현재까지 저장된 선택지 개수
+# 출력할 텍스트 데이터 (이야기의 각 문장)
+# texts = [
+#     "아주 역사가 깊은‘밀레니아’라는 대륙이 있었다.         ",#0
+#     "밀레니아엔 불, 번개, 얼음, 땅, 바람의 힘을 가진 5개의 나라가 있다.         ",#1
+#     "나라들엔 각각 강력한 힘을 가진 대마법사들이 있다.         ",#2
+#     "대마법사들의 힘의 근원은 그 나라가 소유한 보석에서 나온다.         ",#3
+#     "하지만 각 나라들은 서로의 보석을 탐하기 시작하였고 결국은 전쟁을 하게 되었다.         ",#4
+#     #플레이어들 대화
+#     "결국은 우리 두 나라만 살아남았네. 너네 나라 보석까지 이제 나한테 바칠 시간이다.         ",#5
+#     "어림도 없지. 이번에야말로 보석을 가져가겠다.         ",#6
+#     #패배자왈 승자왈
+#     "끄어어어억(털썩)             ",#7
+#     "드디어 다 모았다. 블랙오팔은 이제 내 차지다.            ",#8
+# ]
+
+texts = [
+    "1         ",#0
+    "2         ",#1
+    "3         ",#2
+    "4         ",#3
+    "5         ",#4
+    #플레이어들 대화
+    "6         ",#5
+    "7         ",#6
+    #패배자왈 승자왈
+    "7         ",#7
+    "8         ",#8
+]
+
+game_winer=0
+# 선택지 데이터 (각 질문에 대해 제공될 두 가지 선택)
+select_options = [None,None,None,None,None,None,None,("다시 하기", "끝내기")]
+select_alpha=[(0,0),(0,0),(0,0),(0,0),(0,0),(1,0),(0,1),(1,0),(0,1),(0,1)]
+window_chat_background=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_background1.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/millenia.png"),(screenh,screenh)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_background2.png"),(screenw,screenw)),
+]
+chat_txt_cnt = 0  # 현재 출력 중인 텍스트 인덱스
+def draw_menu_buttons(screen, font_title):#타이틀, 메뉴 함수
+    global game_screen_index
+    if not hasattr(draw_menu_buttons, "value"):  # 속성이 없는 경우
+        draw_menu_buttons.value = background_ogg[0].play(-1)
+    title_adjustment = 30
+    menu_button_size = (400, 100)  # w, h
+    title_pos=(
+        (screenw - menu_button_size[0]) // 2-100,
+        (screenh - menu_button_size[1] * 7-100)
+    )
+    menu_button_pos1 = (
+        (screenw - menu_button_size[0]) // 2,
+        (screenh - menu_button_size[1] * 3 - title_adjustment * 3)
+    )
+    menu_button_pos2 = (
+        (screenw - menu_button_size[0]) // 2,
+        (screenh - menu_button_size[1] * 2 - title_adjustment * 2)
+    )
+    menu_button_pos3 = (
+        (screenw - menu_button_size[0]) // 2,
+        (screenh - menu_button_size[1] - title_adjustment)
+    )
+    menu_radius = 30  # 둥근 모서리 반지름
+    titlebackw,titlebackh=screenh,screenw
+    titlew,titleh=1989//3,924//3
+    title_pos = (# 타이틀 이미지의 중앙 위치 계산
+            (screenw - titlew) // 2,
+            (screenh - titleh) // 7
+    )
+
+    # 타이틀 이미지 로드
+    title_background=pygame.transform.scale(pygame.image.load("pygame_application_project/title_background0.png"),(screenw,screenh))
+    title_image=pygame.transform.scale(pygame.image.load("pygame_application_project/The_Great_Wizard_title3.png"),(titlew,titleh))
+    screen.blit(title_background,(0,0))
+    screen.blit(title_image, title_pos)
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    # 첫 번째 버튼: "게임 시작"
+    button_rect1 = pygame.Rect(*menu_button_pos1, *menu_button_size)  # 버튼 사각형
+    text_surface1 = font_title.render("게임 시작", True, WHITE)  # 버튼 텍스트
+    text_rect1 = text_surface1.get_rect(center=(menu_button_pos1[0] + menu_button_size[0] // 2, menu_button_pos1[1] + menu_button_size[1] // 2))
+    pygame.draw.rect(screen, SILVER if button_rect1.collidepoint(mouse_x, mouse_y) else TITLE_BUTTON, button_rect1, border_radius=menu_radius)
+    screen.blit(text_surface1, text_rect1)
+    if button_rect1.collidepoint(mouse_x, mouse_y) and pygame.mouse.get_pressed()[0]:
+        print("게임 시작")
+        game_screen_index=3
+
+    # 두 번째 버튼: "게임 설명"
+    button_rect2 = pygame.Rect(*menu_button_pos2, *menu_button_size)
+    text_surface2 = font_title.render("게임 설명", True, WHITE)
+    text_rect2 = text_surface2.get_rect(center=(menu_button_pos2[0] + menu_button_size[0] // 2, menu_button_pos2[1] + menu_button_size[1] // 2))
+    pygame.draw.rect(screen, SILVER if button_rect2.collidepoint(mouse_x, mouse_y) else TITLE_BUTTON, button_rect2, border_radius=menu_radius)
+    screen.blit(text_surface2, text_rect2)
+    if button_rect2.collidepoint(mouse_x, mouse_y) and pygame.mouse.get_pressed()[0]:
+        print("게임 설명")
+        game_screen_index=1
+
+    # 세 번째 버튼: "게임 종료"
+    button_rect3 = pygame.Rect(*menu_button_pos3, *menu_button_size)
+    text_surface3 = font_title.render("게임 종료", True, WHITE)
+    text_rect3 = text_surface3.get_rect(center=(menu_button_pos3[0] + menu_button_size[0] // 2, menu_button_pos3[1] + menu_button_size[1] // 2))
+    pygame.draw.rect(screen, SILVER if button_rect3.collidepoint(mouse_x, mouse_y) else TITLE_BUTTON, button_rect3, border_radius=menu_radius)
+    screen.blit(text_surface3, text_rect3)
+    if button_rect3.collidepoint(mouse_x, mouse_y) and pygame.mouse.get_pressed()[0]:
+        print("게임 종료")
+        game_screen_index=2
+        pygame.quit()
+        sys.exit()
+def game_way(screen,font):
+    # 폰트 설정 (한글 지원 폰트)
+     
+    
+    # 화면 설정
+    
+
+    # 배경 이미지 불러오기 및 크기 조정
+    game_way_backgrounds = [
+        pygame.image.load("pygame_application_project/fire_Explain1.png"),
+        pygame.image.load("pygame_application_project/fire_Explain2.png"),
+        pygame.image.load("pygame_application_project/lightning_Explain.png"),
+        pygame.image.load("pygame_application_project/ice_Explain.png"),
+        pygame.image.load("pygame_application_project/ground_Explain.png"),
+        pygame.image.load("pygame_application_project/wind_Explain.png")
+    ]
+    game_way_backgrounds = [pygame.transform.scale(bg, (screenw, screenh)) for bg in game_way_backgrounds]
+
+    # 버튼 속성 설정
+    white = (255, 255, 255)
+    right_arrow_rect = pygame.Rect(screenw - 50, screenh // 2 - 50, 50, 100)  # 오른쪽 화살표 위치와 크기
+    left_arrow_rect = pygame.Rect(0, screenh // 2 - 50, 50, 100)  # 왼쪽 화살표 위치와 크기
+
+    # 현재 페이지 인덱스
+    current_page = 0
+
+    # 화면 새로고침 속도 관리
+    clock = pygame.time.Clock()
+
+    running = True
+    while True:
+        for event in pygame.event.get():
+            if event.type==pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # 마우스 클릭 이벤트
+                if right_arrow_rect.collidepoint(event.pos):  # 오른쪽 화살표 클릭
+                    if current_page < len(game_way_backgrounds) - 1:
+                        current_page += 1  # 다음 페이지로 이동
+                    elif current_page == len(game_way_backgrounds) - 1:
+                        # 마지막 페이지에서 오른쪽 화살표 클릭 시 종료
+                        return 0
+                elif left_arrow_rect.collidepoint(event.pos):  # 왼쪽 화살표 클릭
+                    if current_page > 0:
+                        current_page -= 1  # 이전 페이지로 이동
+        
+        # 배경 이미지 그리기
+        screen.blit(game_way_backgrounds[current_page], (0, 0))
+        
+        # 오른쪽 화살표 그리기
+        pygame.draw.polygon(screen, white, [
+            (screenw - 40, screenh // 2 - 30),  # 위쪽
+            (screenw - 40, screenh // 2 + 30),  # 아래쪽
+            (screenw - 10, screenh // 2)        # 끝점
+        ])
+        
+        # 왼쪽 화살표 그리기 (첫 번째 페이지가 아닌 경우에만)
+        if current_page > 0:
+            pygame.draw.polygon(screen, white, [
+                (40, screenh // 2 - 30),  # 위쪽
+                (40, screenh // 2 + 30),  # 아래쪽
+                (10, screenh // 2)        # 끝점
+            ])
+        pygame.display.flip()
+        clock.tick(fps)
+#캐릭터 선택 함수
+skill_center=[0,0]
+def select_character(player_num,screen,font,key_font,skill_select_txt,character_color,clock):
+    global skill_center
+    selected_character = None
+    while selected_character is None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                for i in range(len(skill_select_txt[0])):
+                    char_x_start = (screenw // len(skill_select_txt[0])) * i
+                    
+                    char_x_end = (screenw // len(skill_select_txt[0])) * (i + 1)
+                    if char_x_start <= mouse_x < char_x_end:
+                        selected_character = i
+
+        screen.fill((0, 0, 0))
+        
+        # text_surface = font.render(displayed_text, True, WHITE)  # 텍스트를 렌더링
+        # screen.blit(text_surface, pos)  # 화면의 지정 위치에 텍스트 표시
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        for i in range(len(skill_select_txt[0])):
+            char_x_start = (screenw // len(skill_select_txt[0])) * i
+            char_x_end = (screenw // len(skill_select_txt[0])) * (i + 1)
+            if char_x_start <= mouse_x < char_x_end:
+                screen.fill(character_color[i], (char_x_start, 0, char_x_end - char_x_start, screenh))
+                if i==0:#f
+                    screen.blit(player_chat_img[i],(char_x_start-70,0))
+                elif i==1:#l
+                    screen.blit(player_chat_img[i],(char_x_start+20,0))
+                elif i==2:#g
+                    screen.blit(player_chat_img[i],(char_x_start,0))
+                elif i==3:#i
+                    screen.blit(player_chat_img[i],(char_x_start-80,0))
+                elif i==4:#w
+                    screen.blit(player_chat_img[i],(char_x_start-100,0))
+
+        for i in range(1, len(skill_select_txt[0])):
+            line_x = (screenw // len(skill_select_txt[0])) * i
+            pygame.draw.line(screen, WHITE, (line_x, 0), (line_x, screenh), 2)
+
+        for i in range(len(skill_select_txt[0])):
+            attribute_txt = font.render(skill_select_txt[0][i], True, WHITE)
+            attribute_rect = attribute_txt.get_rect(center=((screenw // len(skill_select_txt[0])) * (i + 0.5), (screenh // 10) * 6))
+            screen.blit(attribute_txt, attribute_rect)
+
+            name_txt = font.render(skill_select_txt[1][i], True, WHITE)
+            name_rect = name_txt.get_rect(center=((screenw // len(skill_select_txt[1])) * (i + 0.5), (screenh // 10) * 7))
+            screen.blit(name_txt, name_rect)
+            for j in range(len(keys[0])):# 스킬 띄우기(원과 키 텍스트 (2x2 배열))
+                row = j // 2
+                col = j % 2
+                circle_center = (
+                    (screenw // len(skill_select_txt[0])) * (i + 0.5) + (col * 70) - 35,
+                    screenh // 2 + 250 + (row * 70)
+                )
+                skill_w,skillh=skillimg_ui_wh[i][j]
+                skill_w//=2;skillh//=2
+                skill_center[0]=circle_center[0]-skill_w
+                skill_center[1]=circle_center[1]-skillh
+                # skill_center[0]=circle_center[0]-30
+                # skill_center[1]=circle_center[1]-30
+                # if i==0 and j==0:#넘을 수 없는 벽### 3-i=스킬 j=플레이어
+                #     skill_center[0]+=5
+                #     skill_center[1]+=5
+                # if i==0 and j==3:#운석
+                #     skill_center[0]-=15
+                #     skill_center[1]-=15
+                # if i==1 and j==0:#번개화살
+                #     skill_center[1]+=5
+                #     skill_center[0]+=5
+                # if i==2 and j==1:#
+                #     skill_center[1]+=15
+                # if i==3 and j==0:#고드름
+                #     skill_center[1]+=15
+                # if i==4 and j==0:#장풍
+                #     skill_center[1]+=20
+                # if i==2 and j==3:#지진
+                #     skill_center[1]+=10
+                #     skill_center[0]+=10
+                player_display=f"player{player_num} 선택"
+                player_txt=font.render(player_display,True, LBLUE)
+                screen.blit(player_txt, (20,20))
+                screen.blit(skillimg_ui[i][j],skill_center)#i:속성, j다양성
+                pygame.draw.circle(screen, WHITE, circle_center, 30, 2)
+                key_txt = key_font.render(keys[0][j], True, WHITE)
+                key_rect = key_txt.get_rect(center=(circle_center[0]+15,circle_center[1]+15))
+                screen.blit(key_txt, key_rect)
+        pygame.display.update()
+        clock.tick(fps)
+
+    return selected_character
+
+
+
+#캐릭터 선택 확인 함수
+def confirm_selection(player_num, selected_character, screen, font, key_font, skill_select_txt, character_color, clock):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+
+        for i in range(1, len(skill_select_txt[0])):# 구분선 그리기
+            line_x = (screenw // len(skill_select_txt[0])) * i
+            pygame.draw.line(screen, WHITE, (line_x, 0), (line_x, screenh), 2)
+
+        for i in range(len(skill_select_txt[0])):
+            attribute_txt = font.render(skill_select_txt[0][i], True, WHITE)  # 속성 텍스트
+            attribute_rect = attribute_txt.get_rect(center=((screenw // len(skill_select_txt[0])) * (i + 0.5), (screenh // 10)*6))
+            screen.blit(attribute_txt, attribute_rect)
+            
+            name_txt = font.render(skill_select_txt[1][i], True, WHITE)# 캐릭터 이름 텍스트
+            name_rect = name_txt.get_rect(center=((screenw // len(skill_select_txt[1])) * (i + 0.5), (screenh // 10)*7))
+            screen.blit(name_txt, name_rect)
+        
+            
+            for j in range(len(keys[0])):# 스킬 띄우기(원과 키 텍스트 (2x2 배열))
+                row = j // 2
+                col = j % 2
+                circle_center = (
+                    (screenw // len(skill_select_txt[0])) * (i + 0.5) + (col * 70) - 35,
+                    screenh // 2 + 250 + (row * 70)
+                )
+                pygame.draw.circle(screen, WHITE, circle_center, 30, 2)
+                key_txt = key_font.render(keys[0][j], True, WHITE)
+                key_rect = key_txt.get_rect(center=(circle_center[0]+15,circle_center[1]+15))
+                screen.blit(key_txt, key_rect)
+        overlay = pygame.Surface((screenw, screenh))
+        overlay.set_alpha(200)  # 투명도 설정 (0: 완전 투명, 255: 불투명)
+        overlay.fill(BLACK)
+        screen.blit(overlay, (0, 0))
+        message = f"player{player_num}: {skill_select_txt[0][selected_character]}, {skill_select_txt[1][selected_character]}를 선택하셨습니다."
+        msg_txt = font.render(message, True, WHITE)
+        msg_rect = msg_txt.get_rect(center=(screenw // 2, screenh // 2 - 50))
+        screen.blit(msg_txt, msg_rect)
+
+        # retry_txt = font.render("다시 선택하기", True, WHITE)
+        # retry_rect = retry_txt.get_rect(center=(screenw // 2, screenh // 2 + 20))
+        # screen.blit(retry_txt, retry_rect)
+
+        next_txt = font.render("NEXT", True, WHITE)
+        next_rect = next_txt.get_rect(center=(screenw // 2, screenh // 2+40))
+        screen.blit(next_txt, next_rect)
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        if pygame.mouse.get_pressed()[0]:
+            # if retry_rect.collidepoint(mouse_x, mouse_y):
+            #     return None
+            if next_rect.collidepoint(mouse_x, mouse_y):
+                return selected_character
+
+        pygame.display.update()
+        clock.tick(fps)
+
+
+
+
+# 선택지 데이터 (각 질문에 대해 제공될 두 가지 선택)
+select_options = [None for _ in range(100)]
+select_alpha=[(0,0),(0,0),(0,0),(0,0),(0,0),(1,0),(0,1),(1,0),(0,1),(0,1)]
+window_chat_background=[
+    pygame.transform.scale(pygame.image.load("pygame_application_project/fire_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/lightning_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_background1.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ice_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/wind_background.png"),(screenw,screenw)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/millenia.png"),(screenh,screenh)),
+    pygame.transform.scale(pygame.image.load("pygame_application_project/ground_background2.png"),(screenw,screenw)),
+]
+chat_txt_cnt = 0  # 현재 출력 중인 텍스트 인덱스
+# 텍스트 출력 함수
+def blit_text(screen, font, text, pos=(320, 580), color=BLACK, delay=50):
+    """
+    화면에 텍스트를 한 글자씩 출력하는 함수
+    - `text` 문자열을 `delay` 시간 간격으로 한 글자씩 출력
+    - 화면에 이미 출력된 텍스트를 `blit_text.text_displayed`에 저장
+    """
+    
+    # blit_text 함수의 속성을 초기화 (한 번만 실행)
+    if not hasattr(blit_text, "text_displayed"):
+        blit_text.text_displayed = ""  # 현재까지 출력된 텍스트
+        blit_text.last_update_time = 0  # 마지막으로 글자를 출력한 시간
+
+    # 현재 시간과 마지막 출력 시간 비교
+    current_time = pygame.time.get_ticks()
+    if current_time - blit_text.last_update_time > delay and len(blit_text.text_displayed) < len(text):
+        # 새로운 글자를 추가
+        blit_text.text_displayed += text[len(blit_text.text_displayed)]
+        blit_text.last_update_time = current_time
+
+    # 출력할 텍스트를 화면에 blit (단어 단위로)
+    words = [word.split(' ') for word in blit_text.text_displayed.splitlines()]
+    space = font.size(' ')[0]  # 공백의 너비
+    x, y = pos  # 텍스트 출력 시작 위치
+    max_width = screenw - 270  # 텍스트 최대 너비 1170
+
+    for line in words:
+        for word in line:
+            word_surface = font.render(word, True, color)
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:  # 한 줄 너비를 초과하면 다음 줄로 이동
+                x = pos[0]
+                y += word_height
+            screen.blit(word_surface, (x, y))
+            x += word_width + space
+        x = pos[0]
+        y += word_height
+
+    # 텍스트가 모두 출력되었는지 확인
+    if len(blit_text.text_displayed) == len(text):
+        return True  # 출력 완료
+    return False  # 아직 출력 중
+#플레이어 이미지/채팅/이름/이름 배경 표시
+def player_display(screen,font,select1=False,select2=False,win=None):
+    global chat_img,chat_img_rect,chat_txt_cnt
+    player_img1=player_chat_img[player1_select]
+    player_img2=player_chat_img[player2_select]
+    player_display_sizew,player_display_sizeh=300,500#플레이어 이미지 크기
+    # player_name_pos=(280,500)
+    name_background_rect_pos=(280,500,100,50)
+    # 플레이어1 (오른쪽)
+    x_pos1,y_pos1=screenw//5,screenh//2+100
+    chat_img=pygame.transform.scale(pygame.image.load("pygame_application_project/chat_windows.png"),(1000,300))  # 대화창 로드
+    chat_img.set_alpha(200)  # 대화창 불투명0(투명)~255(불투명)
+    chat_img_rect=chat_img.get_rect(center=(screenw//2+10,650))  # 대화창 크기 정의
+
+    if select1==True and select1==1:#플레이어 1이 말할 차례
+        screen.blit(player_img1, (x_pos1-player_display_sizew//2, y_pos1-player_display_sizeh//2))#캐릭터
+        # skill_select_txt[4][player1_select]#색상
+        # skill_select_txt[1][player1_select]#이름
+        pygame.draw.rect(screen,skill_select_txt[4][player1_select],name_background_rect_pos,border_radius=10)#이름 배경
+        player1_name_display=font.render(skill_select_txt[1][player1_select],True,WHITE)
+        name_width1 = player1_name_display.get_width()
+        name_height1 = player1_name_display.get_height()
+        name1_background_rect_pos=(
+        name_background_rect_pos[0] + (name_background_rect_pos[2] - name_width1) // 2,  # X 중심 정렬
+        name_background_rect_pos[1] + (name_background_rect_pos[3] - name_height1) // 2  # Y 중심 정렬
+        )
+        screen.blit(player1_name_display,name1_background_rect_pos)#이름
+    else:#플레이어1이 말하지 않을때
+        player_img1_alpha = player_img1.copy()
+        if select_alpha[chat_txt_cnt] == (0, 0):  # select_alpha가 (0, 0)일 경우
+            player_img1_alpha.set_alpha(0)  # 완전히 투명하게 설정
+        else:
+            player_img1_alpha.set_alpha(100)  # 50% 투명도
+        screen.blit(player_img1_alpha, (x_pos1-player_display_sizew//2, y_pos1-player_display_sizeh//2))
+    # 플레이어2 (왼쪽) 
+    x_pos2,y_pos2=screenw-(screenw//5),screenh//2+100
+    player_img2_flip=pygame.transform.flip(player_img2,True,False)#좌우반전
+    if select2==True and select2==1:#플레이어 2가 말할 차례
+        screen.blit(player_img2_flip, (x_pos2-player_display_sizew//2, y_pos2-player_display_sizeh//2))
+        # screen.blit(chat_img, chat_img_rect)  # 대화창 화면 표시
+        pygame.draw.rect(screen,skill_select_txt[4][player2_select],name_background_rect_pos,border_radius=10)
+        player2_name_display=font.render(skill_select_txt[1][player2_select],True,WHITE)
+        name_width2 = player2_name_display.get_width()
+        name_height2 = player2_name_display.get_height()
+        name2_background_rect_pos=(
+        name_background_rect_pos[0] + (name_background_rect_pos[2] - name_width2) // 2,  # X 중심 정렬
+        name_background_rect_pos[1] + (name_background_rect_pos[3] - name_height2) // 2  # Y 중심 정렬
+        )
+        screen.blit(player2_name_display,name2_background_rect_pos)
+        
+    else:#플레이어 2가 말하지 않을때
+        player_img2_alpha = player_img2.copy()
+        player_img2_flip_alpha=pygame.transform.flip(player_img2_alpha,True,False)
+        if select_alpha[chat_txt_cnt] == (0, 0):  # select_alpha가 (0, 0)일 경우
+            player_img2_flip_alpha.set_alpha(0)  # 완전히 투명하게 설정
+        else:
+            player_img2_flip_alpha.set_alpha(100)  # 50% 투명도
+        screen.blit(player_img2_flip_alpha, (x_pos2-player_display_sizew//2, y_pos2-player_display_sizeh//2))
+    
+# 선택 버튼 함수
+def select_button(screen, font, option1, option2, mouse_pos, click):
+    """
+    화면에 두 개의 버튼을 출력하고 클릭 여부를 확인하는 함수
+    - `option1`, `option2`는 각 버튼의 텍스트
+    - `mouse_pos`는 현재 마우스 위치
+    - `click`은 마우스 클릭 이벤트
+    """
+    # 각 버튼의 위치와 크기 설정
+    button_rect1 = pygame.Rect(600, 100, 300, 100)  # 첫 번째 버튼
+    button_rect2 = pygame.Rect(600, 300, 300, 100)  # 두 번째 버튼
+
+    # 버튼 색상 설정 (마우스가 버튼 위에 있으면 LBLUE, 아니면 GRAY)
+    button_color1=pygame.draw.rect(screen, LBLUE if button_rect1.collidepoint(mouse_pos) else GRAY, button_rect1, border_radius=10)
+    button_color2=pygame.draw.rect(screen, LBLUE if button_rect2.collidepoint(mouse_pos) else GRAY, button_rect2, border_radius=10)
+
+    # 버튼 텍스트 출력
+    text_if1 = font.render(option1, True, WHITE)
+    text_if2 = font.render(option2, True, WHITE)
+    screen.blit(text_if1, text_if1.get_rect(center=button_rect1.center))
+    screen.blit(text_if2, text_if2.get_rect(center=button_rect2.center))
+    button_surface1 = pygame.Surface(button_rect1.size)  # 버튼을 위한 서피스 생성
+    button_surface1.fill(button_color1)  # 색상 채우기
+
+    button_surface1.set_alpha(150)  # 반투명도 설정 (0~255) 
+    screen.blit(button_surface1, button_rect1.topleft)  # 버튼 그리기
+
+    button_surface2 = pygame.Surface(button_rect2.size)  # 버튼을 위한 서피스 생성
+    button_surface2.fill(button_color2)  # 색상 채우기
+    button_surface2.set_alpha(150)  # 반투명도 설정 (0~255)
+    screen.blit(button_surface2, button_rect2.topleft)  # 버튼 그리기
+
+    # 클릭 이벤트 처리
+    if click:
+        if button_rect1.collidepoint(mouse_pos):
+            return 0  # 첫 번째 버튼 선택
+        elif button_rect2.collidepoint(mouse_pos):
+            return 2  # 두 번째 버튼 선택
+    return None  # 버튼 클릭 없음
+#스크린, 폰트, 채팅 start, 채팅 end, 배경, 밀래니아 띄울건지 #win이 있으면면
+def window_chat(screen,font,chat_txt_min, chat_txt_max,backgroundimg,mapm=False,win=None):
+    global select_result, select_result_cnt, select_result_basket,chat_txt_cnt,select_alpha,player1_select,player2_select,skill_data
+    chat_txt_cnt = chat_txt_min
+    txt_complete = False 
+    if chat_txt_min==0 and chat_txt_max==4:
+        if not hasattr(window_chat, "value"):  # 속성이 없는 경우
+            background_ogg[0].stop()
+            background_ogg[1].play(-1)
+    if chat_txt_min==9 and chat_txt_max==9:
+        if not hasattr(window_chat, "value"):  # 속성이 없는 경우
+            background_ogg[2].stop()
+            background_ogg[3].play(-1)
+    # if chat_txt_min==9:
+    if win==True:
+        select_alpha[7]=(1,0)
+        select_alpha[8]=(0,1)
+    elif win==False:
+        select_alpha[7]=(0,1)
+        select_alpha[8]=(1,0)
+    while True:
+        mouse_pos = pygame.mouse.get_pos()  # 현재 마우스 위치
+        click = False  # 클릭 이벤트 초기화
+        screen.fill(BLACK)  # 화면 배경 초기화
+        mouse_x,mouse_y=pygame.mouse.get_pos()  # 마우스 위치 확인
+        mousepos_txt=font.render("{},{}".format(mouse_x,mouse_y), True, BLACK)  # 마우스 위치 텍스트 표시
+        screen.blit(mousepos_txt,(10,10))  # 마우스 위치 텍스트 화면 표시
+        
+        
+        # 이벤트 처리
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # 창 닫기 이벤트
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:  # 마우스 클릭 이벤트
+                click = True
+        if win==True:
+            screen.blit(backgroundimg[player2_select],(0,0))
+        elif win==False:
+            screen.blit(backgroundimg[player1_select],(0,0))
+        elif mapm==False:
+            screen.blit(backgroundimg[player2_select],(screenw//2,0))
+            screen.blit(backgroundimg[player1_select],(-screenw//2,0))
+        else:
+            screen.blit(backgroundimg[5],(315,0))
+        
+        # 텍스트 출력 및 선택 처리
+        if chat_txt_cnt <= chat_txt_max and chat_txt_cnt < len(texts):  # chat_txt_max까지 출력
+            # 텍스트를 한 글자씩 출력
+            player_display(screen,font,select_alpha[chat_txt_cnt][0],select_alpha[chat_txt_cnt][1],win)
+            screen.blit(chat_img, chat_img_rect)
+            txt_complete = blit_text(screen, font, texts[chat_txt_cnt])
+            
+            # 텍스트 출력이 완료되었고 선택지가 있는 경우
+            if txt_complete and chat_txt_cnt < len(select_options) and select_options[chat_txt_cnt]!=None:
+                option1, option2 = select_options[chat_txt_cnt]
+                
+                choice = select_button(screen, font, option1, option2, mouse_pos, click)
+                if choice is not None:
+                    # 선택 결과 저장
+                    chat_txt_cnt += 1 
+                    txt_complete = False
+                    blit_text.text_displayed = ""
+            elif txt_complete:
+                chat_txt_cnt += 1
+                txt_complete = False
+                blit_text.text_displayed = ""
+
+        else:
+            chat_txt_cnt+=1
+            if chat_txt_min==0 and chat_txt_max==4:
+                player1_select,player2_select=None,None
+                return 4#chat_txt_min, chat_txt_max으로 판별
+            if chat_txt_min==5 and chat_txt_max==6:
+                for player in range(2):#스킬 쿨타임 초기화
+                    for skill_index in range(4):
+                        skill_data[player][skill_index]['angle'] = 0
+                        skill_data[player][skill_index]['start_time'] = pygame.time.get_ticks()
+                return 6#chat_txt_min, chat_txt_max으로 판별
+            if chat_txt_min==7 and chat_txt_max==8:
+                return 8
+        pygame.display.update()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#스킬 이미지 및 여러 함수
+skill_ui_center=[0,0]
+def skill(screen,font,player1_select,player2_select):
+    global skill_ui_center
+    for i in range(4):#스킬
+            pygame.draw.circle(screen,skill_select_txt[4][player1_select],(skillw*(i+1)+skilladjustment,screenh-uih//2),30)#플레이어1 스킬1~4 원 x,y,size
+            pygame.draw.circle(screen,skill_select_txt[4][player2_select],(screenw-(skillw*(i+1)+skilladjustment),screenh-uih//2),30)#플레이어2 스킬1~4 원 x,y,size
+            for j in range(2):#j=플레이어
+                if j == 0:
+                    skill_ui_w,skill_ui_h=skillimg_ui_wh[player1_select][i]
+                    skill_ui_w//=2;skill_ui_h//=2
+                    skill_ui_center[0]=skillw*(i+1)+skilladjustment-skill_ui_w
+                    skill_ui_center[1]=screenh-uih//2-skill_ui_h
+                    # skill_ui_center[0]=skillw*(i+1)+skilladjustment-30
+                    # skill_ui_center[1]=screenh-uih//2-30
+                    # if player1_select==0 and i==0:#넘을 수 없는 벽### 3-i=스킬 j=플레이어
+                    #     skill_ui_center[0]+=5
+                    #     skill_ui_center[1]+=5
+                    # if player1_select==1 and j==0:#번개화살
+                    #     skill_ui_center[1]+=5
+                    #     skill_ui_center[0]+=5
+                    # if player1_select==2 and i==1:
+                    #     skill_ui_center[1]+=15
+                    # if player1_select==3 and i==0:#고드름
+                    #     skill_ui_center[1]+=15
+                    # if player1_select==3 and i==2:#아이스링크
+                    #     skill_ui_center[1]+=5
+                    #     skill_ui_center[0]+=5
+                    # if player1_select==4 and i==0:#장풍
+                    #     skill_ui_center[1]+=20
+                    # if player1_select==2 and i==3:#지진
+                    #     skill_ui_center[1]+=10
+                    #     skill_ui_center[0]+=10
+                    screen.blit(skillimg_ui[player1_select][i],[skill_ui_center[0],skill_ui_center[1]])
+                    skill_cool_time_circle(screen,skillw*(i+1)+skilladjustment,screenh-uih//2,skill_cool_times[(j,i)],j,i,font,player1_select,player2_select)#쿨타임 원
+
+                    screen.blit(skilltxtoutput[j][i],[skillw*(i+1)+skilladjustment,screenh-uih//2])#XCVB 알파벳
+                    
+                else:
+                    skill_ui_w,skill_ui_h=skillimg_ui_wh[player2_select][3-i]
+                    skill_ui_w//=2;skill_ui_h//=2
+                    skill_ui_center[0]=screenw-(skillw*(i+1)+skilladjustment)-skill_ui_w
+                    skill_ui_center[1]=screenh-uih//2-skill_ui_h
+                    # skill_ui_center[0]=screenw-(skillw*(i+1)+skilladjustment)-30
+                    # skill_ui_center[1]=screenh-uih//2-30
+                    # if player2_select==0 and i==3-0:#넘을 수 없는 벽### 3-i=스킬 j=플레이어
+                    #     skill_ui_center[0]+=5
+                    #     skill_ui_center[1]+=5
+                    # if player2_select==1 and j==3-0:#번개화살
+                    #     skill_ui_center[1]+=5
+                    #     skill_ui_center[0]+=5
+                    # if player2_select==2 and i==3-1:#전광석과
+                    #     skill_ui_center[1]+=15
+                    # if player2_select==3 and i==3-0:#고드름
+                    #     skill_ui_center[1]+=15
+                    # if player2_select==3 and i==2:#이이스링크
+                    #     skill_ui_center[1]+=5
+                    #     skill_ui_center[0]+=5
+                    # if player2_select==4 and i==3-0:#장풍
+                    #     skill_ui_center[1]+=20
+                    # if player2_select==2 and i==3-3:#지진
+                    #     skill_ui_center[1]+=10
+                    #     skill_ui_center[0]+=10
+                    screen.blit(skillimg_ui[player2_select][3-i],[skill_ui_center[0],skill_ui_center[1]])#j 플레이어 i스킬 인덱스
+                    skill_cool_time_circle(screen,screenw-(skillw*(i+1)+skilladjustment),screenh-uih//2,skill_cool_times[(j,i)],j,i,font,player1_select,player2_select)#쿨타임 원
+
+                    screen.blit(skilltxtoutput[j][i],[screenw-(skillw*(i+1)+skilladjustment),screenh-uih//2])#UIOP
+            
+                    
+#스킬 원 각도 0~π(pi)까지 증가, 각 스킬 태두리, 스킬 남은 시간 카운트
+def skill_cool_time_circle(screen, x, y,skill_cool_time,player,skill_index,font,player1_select,player2_select):# 스크린,(x,y),스킬 쿨타임,플레이어,스킬 번호
+    global angle,timer_fps,timer_dis,time_cnt,time_display_cnt,select_skill_basket  #각도 값을 전역 변수로 관리
+    angle = skill_data[player][skill_index]['angle']#각도 값
+    start_time = skill_data[player][skill_index]['start_time']#시간재기
+    skill_elapsed_time = (pygame.time.get_ticks() - start_time) / 1000  # 초 단위
+    if angle < 360:
+        angle = (skill_elapsed_time / skill_cool_time) * 360  # 진행 비율에 따라 각도 조절
+        skill_data[player][skill_index]['angle'] = angle  # 갱신된 각도 저장
+    center=(x,y)#원의 중심
+
+    radius=30#반지름
+    points=[center]#원의 각 저장 변수
+    #increase=360/(fps*skill_cool_time)
+    k=1
+    #각도를 증가시킴 (회전 속도 조절)
+    for i in range(0,int(angle)+1,k):#angle을 기반으로 매 k도 간격으로 점을 계산,매 k도 간격으로 점을 추가/angle가 float일때 있기에 int로
+        x_point=center[0]+(radius-2)*math.cos(math.radians(i))
+        y_point=center[1]+(radius-2)*math.sin(math.radians(i))
+        points.append((x_point, y_point))#각의 증가함에 따른 저장
+    if angle<360:
+        if len(points)>2:
+            # 플레이어에 따라 색상을 다르게 설정
+            if player == 0:
+                color = skill_select_txt[4][player1_select]  # 플레이어 1의 색상
+            else:
+                color = skill_select_txt[4][player2_select]  # 플레이어 2의 색상
+            
+            pygame.draw.polygon(screen, TRANSLUCENT_LIGHT_GRAY, points)  # 색상에 따라 그리기
+    # pygame.draw.circle(screen, WHITE, [x_point,screenh//2],5)
+    # pygame.draw.circle(screen, BLACK, [y_point,screenh//2],5)
+    # pygame.draw.circle(screen, RED, [x_point,y_point],5)
+    pygame.draw.circle(screen,BLACK,center,radius,3)#원의 테두리 그리기
+    # print(points)
+    time_cnt[player][skill_index]=skill_cool_time-skill_elapsed_time
+    
+    if time_cnt[player][skill_index]>=1:
+        time_display_cnt[player][skill_index]=font.render(str(int(time_cnt[player][skill_index])),True,BLACK)
+        screen.blit(time_display_cnt[player][skill_index],[x-7,y-7])#스킬 쿨타임 초 출력 / 1 초과 int 단위
+    elif time_cnt[player][skill_index]>=0.02:
+        # f"{time_cnt[player][skill_index]:.1f}"
+        time_display_cnt[player][skill_index]=font.render(str(f"{time_cnt[player][skill_index]:.1f}"),True,BLACK)
+        screen.blit(time_display_cnt[player][skill_index],[x-13,y-7])#스킬 쿨타임 초 출력 / 1 미만 float 단위
+
+    #각이 360°(도) 즉, 쿨이 타 차면
+    if angle>=360:
+        timer_fps[player][skill_index]+=fps*2
+        timer_dis[player][skill_index]=(timer_fps[player][skill_index])//100
+        if timer_dis[player][skill_index]<10:#다 찼을때 0.1초만 출력
+            cooldown_finish_effect(screen,center,radius,player1_select,player2_select)
+
+
+    # if angle>=360:
+    #     # angle=0
+    #     # start_time = pygame.time.get_ticks()
+    #     cooldown_start_time=None
+    #     if cooldown_start_time is None:
+    #         cooldown_start_time = pygame.time.get_ticks()
+    #     cooldown_elapsed_time = (pygame.time.get_ticks()) / 1000
+    #     if cooldown_elapsed_time <= 1:
+    #         cooldown_finish_effect(screen,center,radius)
+    skill_data[player][skill_index]['angle'] = angle#갱신된 값 저장
+    skill_data[player][skill_index]['start_time'] = start_time#갱신된 값 저장
+#angle=360°(도)일때 이펙트
+
+def cooldown_finish_effect(screen,center,radius,player1_select,player2_select):
+    for _ in range(5):  #원을 감쌀 선분 줄 개수
+        #원의 경계에서 랜덤한 각도를 선택하여 시작점 설정
+        cooldown_angle=random.uniform(0, 2 * math.pi)#0~2*π(pi) 범위의 실수를 반환
+        cooldown_start_x=center[0]+math.cos(cooldown_angle)*(radius)
+        cooldown_start_y=center[1]+math.sin(cooldown_angle)*(radius)
+
+        #쿨타임_완료_효과가 진행될 거리와 방향 설정
+        segments=10  #선분과 선분 사이 선분 개수
+        length=random.randint(5, 7) #각 선분의 길이
+        cooldown_x,cooldown_y=cooldown_start_x,cooldown_start_y
+
+        for _ in range(segments):#무작위 각도로 꺾이게 설정
+            cooldown_angle+=random.uniform(-0.5,0.5)  #선분이 꺾이는 각도 조절
+            cooldown_end_x=cooldown_x+math.cos(cooldown_angle)*length
+            cooldown_end_y=cooldown_y+math.sin(cooldown_angle)*length
+
+            finish_color = skill_select_txt[4][player1_select] if player1_select is not None else skill_select_txt[4][player2_select]
+            pygame.draw.line(screen,finish_color,(cooldown_x,cooldown_y),(cooldown_end_x,cooldown_end_y),2)#번개 선 그리기
+            cooldown_x,cooldown_y=cooldown_end_x,cooldown_end_y#다음 시작점을 현재 끝점으로 갱신
+
+# 반원 설정, 초점 가이드/방향 표시기/회전추적기+화살표 설정
+def create_half_circle_with_arrow(arrow_angle):
+    color=GRAY
+    half_circle_image = pygame.Surface((100, 100), pygame.SRCALPHA)  # 반원 크기
+    pygame.draw.arc(
+        half_circle_image,
+        color,
+        (0, 0, 100, 100),
+        math.radians(180),
+        math.radians(360),
+        5,
+    )
+    # 화살표 추가
+    arrow_length = 50
+    arrow_base = (#화살표 몸체 끝을 나타내는 좌표 / 즉, 꼬리
+        50 + (arrow_length - 10) * math.cos(math.radians(arrow_angle)),
+        50 - (arrow_length - 10) * math.sin(math.radians(arrow_angle))
+    )
+    arrow_tip = (#화살촉의 각 Θ가 만들어지는 지점
+        50 + arrow_length * math.cos(math.radians(arrow_angle)),
+        50 - arrow_length * math.sin(math.radians(arrow_angle))
+    )
+    left_wing = (
+        arrow_base[0] + 5 * math.cos(math.radians(arrow_angle + 135)),
+        arrow_base[1] - 5 * math.sin(math.radians(arrow_angle + 135))
+    )
+    right_wing = (
+        arrow_base[0] + 5 * math.cos(math.radians(arrow_angle - 135)),
+        arrow_base[1] - 5 * math.sin(math.radians(arrow_angle - 135))
+    )
+    pygame.draw.line(half_circle_image, color, (50, 50), arrow_base, 3)
+    pygame.draw.polygon(half_circle_image, color, [arrow_tip, left_wing, right_wing])
+    return half_circle_image
+
+def player2_transform_flip(player2):
+    if player2 == 0:
+        # 파이어스킬왼오대칭처리
+        fire_skill[0] = pygame.transform.flip(fire_skill[0], True, False)
+        fire_skill[1] = pygame.transform.flip(fire_skill[1], True, False)
+        fire_skill[2] = pygame.transform.flip(fire_skill[2], True, False)
+        fire_skill[3] = pygame.transform.flip(fire_skill[3], True, False)
+
+    elif player2 == 1:
+        # 라이트닝스킬왼오대칭처리
+        lightning_skill[0] = pygame.transform.flip(lightning_skill[0], True, False)
+        lightning_skill[1] = pygame.transform.flip(lightning_skill[1], True, False)
+        lightning_skill[2] = pygame.transform.flip(lightning_skill[2], True, False)
+        lightning_skill[3] = pygame.transform.flip(lightning_skill[3], True, False)
+
+    elif player2 == 2:
+        # 그라운드스킬왼오대칭처리
+        ground_skill[0] = pygame.transform.flip(ground_skill[0], True, False)
+        ground_skill[1] = pygame.transform.flip(ground_skill[1], True, False)
+        ground_skill[2] = pygame.transform.flip(ground_skill[2], True, False)
+        ground_skill[3] = pygame.transform.flip(ground_skill[3], True, False)
+
+    elif player2 == 3:
+        # 아이스스킬왼오대칭처리
+        ice_skill[0] = pygame.transform.flip(ice_skill[0], True, False)
+        ice_skill[1] = pygame.transform.flip(ice_skill[1], True, False)
+        ice_skill[2] = pygame.transform.flip(ice_skill[2], True, False)
+        ice_skill[3] = pygame.transform.flip(ice_skill[3], True, False)
+
+    elif player2 == 4:
+        # 윈드스킬왼오대칭처리
+        wind_skill[0] = pygame.transform.flip(wind_skill[0], True, False)
+        wind_skill[1] = pygame.transform.flip(wind_skill[1], True, False)
+        wind_skill[2] = pygame.transform.flip(wind_skill[2], True, False)
+        wind_skill[3] = pygame.transform.flip(wind_skill[3], True, False)
+
+
+arrow_angle1,arrow_angle2=0,0
+arrow_angle1_max,arrow_angle1_min,arrow_angle2_max,arrow_angle2_min=0,0,0,0
+skill_x,skill_y=[0 for _ in range(8)],[0 for _ in range(8)]
+#skill_x[player_number][qwer]
+player_number=1
+skill_number=0
+is_skill_active = [False for _ in range(8)]
+skill_angle1=[]
+skill_angle2=[]
+
+skill_manifold=[
+    [0,1,2,3],#fire
+    [0,4,5,3],#lightning
+    [0,6,7,8],#ground
+    [0,7.5,9,8.5],#ice
+    [0,10,2,11]#wind
+]
+skill_x,skill_y=[0 for _ in range(8)],[0 for _ in range(8)]
+#skill_x[player_number][qwer]
+player_number=1
+skill_number=0
+is_skill_active = [False for _ in range(8)]
+skill_angle1=[]
+skill_angle2=[]
+div_angle1=[]
+div_angle2=[]
+skill_dx1,skill_dx2=5,-5
+def beeline_skill0(screen, player_number,img0,img1,qwer,player_rect1,player_rect2,angle,player1_select,player2_select):
+    global is_skill_active,skill_x,skill_y,skill_angle1,skill_angle2,div_angle1,div_angle2
+    if player_number==0:
+        if not hasattr(beeline_skill0, "value"):
+            beeline_skill0.value=skill_ogg[player1_select][0].play(0)
+    if player_number==1:  
+        if not hasattr(beeline_skill0, "value"):
+            beeline_skill0.value=skill_ogg[player2_select][0].play(0)
+    skill0_key=pygame.key.get_pressed()
+    if player_number==0:
+        if skill0_key[pygame.K_x]:#p1
+            div_angle1.append(angle[0])
+            if 270 <= div_angle1[0] <= 330:
+                skill_x[player_number] = screenw // 2
+                skill_y[player_number] =uiout   # 상단
+            elif 0 < div_angle1[0] < 30 or 330 < div_angle1[0] < 360:
+                skill_x[player_number] = screenw // 2
+                skill_y[player_number] = (screenh // 3) * 1  # 중간
+            elif 30 <= div_angle1[0] <= 90:
+                skill_x[player_number] = screenw // 2
+                skill_y[player_number] = (screenh // 3) * 2-uiout  # 하단
+        skill_x[player_number] += skill_dx1
+        # skill_y[player_number]= skill_dy[player_number]
+        screen.blit(img0, (skill_x[player_number], skill_y[player_number]))
+        #스킬이 화면 밖으로 나가면 비활성화
+        if not (0 <= skill_x[player_number] <= screenw and 0 <= skill_y[player_number] <= screenh):
+            div_angle1=[]
+            is_skill_active[0] = False
+    if player_number==1:
+        if skill0_key[pygame.K_u]:#p2
+            div_angle2.append(angle[1])
+            if 90 <= div_angle2[0] <= 150:
+                skill_x[player_number] = screenw//2-(screenh-uiout*3)//3
+                skill_y[player_number] = (screenh // 3) * 2-uiout # 하단
+            elif 150 < div_angle2[0] < 210:
+                skill_x[player_number] = screenw//2-(screenh-uiout*3)//3
+                skill_y[player_number] = (screenh // 3) * 1  # 중간
+            elif 210 <= div_angle2[0] <= 270:
+                skill_x[player_number] = screenw//2-(screenh-uiout*3)//3
+                skill_y[player_number] = uiout   # 화면 상단
+        skill_x[player_number] += skill_dx2
+        screen.blit(img1, (skill_x[player_number], skill_y[player_number]))
+        if not (-screenw//2 <= skill_x[player_number] <= screenw and -screenw//2 <= skill_y[player_number] <= screenh):
+            div_angle2=[]
+            is_skill_active[4] = False
+            
+
+# def player2_transform_flip(player2):
+#     if player2==0:
+#         fire_skill[0] == pygame.transform.flip(fire_skill.png[0], True, False)
+#     elif player2==1:
+
+#     elif
+
+
+
+
+
+
+# skill_dx,skill_dy=[0,0],[0,0]
+# skill_x,skill_y=[screenw//2,screenw//2],[0,0]
+#직선 방향 4개의 스킬0 fire0~wind0 ground1
+# def beeline_skill0(screen, player_number, img, qwer, player_rect1, player_rect2, angle, player1_select, player2_select):
+#     global is_skill_active, skill_x, skill_y, skill_angle1, skill_angle2, skill_dx, skill_dy
+    # div_angle1=[]
+    # # 각도에 따른 초기화
+    # div_angle1.append(arrow_angle1)
+    
+    # # 초기 위치 한 번만 설정
+    # # if player_number == 0:  # Player 1
+    # #     skill_x = screen
+    # #     skill_y = player_rect1.centery
+    # # else:  # Player 2
+    # #     skill_x = player_rect2.centerx
+    # #     skill_y = player_rect2.centery
+
+    # # 속도 설정
+    # skill0_speed = 5  # 이동 속도
+    # if  90<=div_angle1[0]<=30:  # 아래쪽 방향
+    #     skill_dx[player_number] = skill0_speed
+    #     skill_dy[player_number] = screenh//2
+    # elif 0<div_angle1[0]<30 or 330<div_angle1[0]<360:  # 중간
+    #     skill_dx[player_number] = skill0_speed
+    #     skill_dy[player_number] = uiout+screenh//2
+    # elif 270<=div_angle1[0]<=330:  # 위쪽 방향
+    #     skill_dx[player_number] = skill0_speed
+    #     skill_dy[player_number] = uiout
+    # print(div_angle1[0])
+    # # 이동
+    # skill_x[player_number] += skill_dx[player_number]
+    # skill_y[player_number]= skill_dy[player_number]
+
+    # # 스크린에 출력
+    # screen.blit(img, (skill_x[player_number], skill_y[player_number]))
+    # # 스킬이 화면 밖으로 나가면 비활성화
+    # if player_number==0:
+    #     if not (0 <= skill_x[player_number] <= screenw and 0 <= skill_y[player_number] <= screenh):
+    #         is_skill_active[0] = False  # 스킬 중지
+    #         # print("Skill deactivated (out of bounds)")  # 디버깅 출력
+    #         div_angle1=[]
+    # else:
+    #     if not (0 <= skill_x[player_number] <= screenw and 0 <= skill_y[player_number] <= screenh):
+    #         is_skill_active[4] = False  # 스킬 중지
+    #         # print("Skill deactivated (out of bounds)")  # 디버깅 출력
+    #         if player_number==0:
+    #             div_angle1=[]
+# skill_x,skill_y=[0 for _ in range(8)],[0 for _ in range(8)]
+# skill_dx,skill_dy=[0,0],[0,0]
+# div_angle1,div_angle2=0,0
+# def beeline_skill0(screen, player_number, img, qwer, player_rect1, player_rect2, angle, player1_select, player2_select):
+#     global skill_x, skill_y, skill_dx,div_angle1,div_angle2
+#     div_angle1=[]
+#     div_angle1.append(angle[0])
+#     div_angle2=[]
+#     div_angle2.append(angle[1])
+#     # 각도에 따른 초기 위치 설정
+#     skill0_key=pygame.key.get_pressed()
+#     if skill0_key[pygame.K_x]:
+#         if 270 <= div_angle1[0] <= 330:
+#             skill_x[player_number] = screenw // 2
+#             skill_y[player_number] =uiout   # 하단 중앙
+#         elif 0 < div_angle1[0] < 30 or 330 < div_angle1[0] < 360:
+#             skill_x[player_number] = screenw // 2
+#             skill_y[player_number] = (screenh // 3) * 1  # 중간
+#         elif 30 <= div_angle1[0] <= 90:
+#             skill_x[player_number] = screenw // 2
+#             skill_y[player_number] = (screenh // 3) * 2-uiout  # 화면 상단
+
+#     # X 좌표 증가
+#     skill_speed = 5
+#     skill_dx[player_number] = skill_speed
+#     skill_x[player_number] += skill_dx[player_number]
+
+#     # 스킬 이미지 출력
+#     screen.blit(img, (skill_x[player_number], skill_y[player_number]))
+#     if not (0 <= skill_x[player_number] <= screenw and 0 <= skill_y[player_number] <= screenh):
+#         is_skill_active[player_number] = False  # 스킬 중지
+#         # print("Skill deactivated (out of bounds)")  # 디버깅 출력
+#         if player_number==0:
+#             div_angle1=[]
+#         else:
+#             div_angle1=[]
+
+#     #스킬이 화면 밖으로 나가면 비활성화
+#     if not (0 <= skill_x[player_number] <= screenw and 0 <= skill_y[player_number] <= screenh):
+#         is_skill_active[0] = False  # 스킬 중지
+#         # print("Skill deactivated (out of bounds)")  # 디버깅 출력
+#         if player_number==0:
+#             div_angle1=[]
+#         else:
+#             div_angle1=[]
+#player name= 0 p1/ 1 p2
+
+
+
+
+
+
+wall_start_x,wall_start_y=[0,0],[0,0]
+# wall_end_x,wall_end_y=0,0
+fire1_timer,fire1_elapsed_time,fire1_elapsed_timer=0,0,0
+ground1_timer,ground1_elapsed_time,ground1_elapsed_timer=0,0,0
+#2개의 스킬벽 세우기 불스터,넘을 수 없는 벽
+def skill_wall1(screen, player_number,img,attribute):
+    global wall_start_x,wall_start_y,fire1_timer,fire1_elapsed_time,fire1_elapsed_timer,ground1_timer,ground1_elapsed_time,ground1_elapsed_timer,is_skill_active
+    if attribute==0:
+        if not hasattr(skill_wall1, "value"):
+            skill_wall1.value=skill_ogg[0][1].play(0)
+    if attribute==2:
+        if not hasattr(skill_wall1, "value"):
+            skill_wall1.value=skill_ogg[2][1].play(0)
+    if attribute==0:
+        fire1_timer+=fps*2
+        fire1_elapsed_time=fire1_timer/100
+        fire1_elapsed_timer=(fire1_elapsed_time)//100
+    elif attribute==2:
+        ground1_timer+=fps*2
+        ground1_elapsed_time=ground1_timer/100
+        ground1_elapsed_timer=(ground1_elapsed_time)//100
+    if fire1_elapsed_timer<15 and attribute==0:
+        if player_number==0 and attribute==0:#p1
+            wall_start_x[player_number]=screenw//2
+            wall_start_y[player_number]=screenh//2-screenh//5
+            # wall_end_x[player_number],wall_end_y[player_number]=screenw//2,screenh//2
+            screen.blit(img,(wall_start_x[player_number],wall_start_y[player_number]))
+            # print(ground1_elapsed_timer)
+        else:#p2
+            wall_start_x[player_number]=0
+            wall_start_y[player_number]=screenh//2-screenh//5
+            # wall_end_x[player_number],wall_end_y[player_number]=screenw//2,screenh//2
+            screen.blit(img,(wall_start_x[player_number],wall_start_y[player_number]))
+    elif fire1_elapsed_timer>=15 and attribute==0:
+        if player_number==0:
+            is_skill_active[2]=False
+        else:
+            is_skill_active[5]=False
+
+    if ground1_elapsed_timer<15 and attribute==2:
+        if player_number==0 and attribute==2:#p1
+            wall_start_x[player_number]=screenw//2
+            wall_start_y[player_number]=screenh//2-screenh//5
+            # wall_end_x[player_number],wall_end_y[player_number]=screenw,screenh
+            screen.blit(img,(wall_start_x[player_number],wall_start_y[player_number]))
+        else:#p2
+            wall_start_x[player_number]=0
+            wall_start_y[player_number]=screenh//2-screenh//5
+            # wall_end_x[player_number],wall_end_y[player_number]=screenw//2,screenh//2
+            screen.blit(img,(wall_start_x[player_number],wall_start_y[player_number]))
+    elif ground1_elapsed_timer>=15 and attribute==2:
+        if player_number==0:
+            is_skill_active[2]=False
+        else:
+            is_skill_active[5]=False
+    
+other_player_x,other_player_y=0,0
+lightning2_timer,lightning2_elapsed_time,lightning2_elapsed_timer=0,0,0
+#섬광
+def lightning2_glare(screen, player_number,img,player_rect1,player_rect2):
+    global other_player_x,other_player_y,lightning2_timer,lightning2_elapsed_time,lightning2_elapsed_timer,x_velocity1,y_velocity1,x_velocity2,y_velocity2,is_skill_active
+    if not hasattr(lightning2_glare, "value"):
+        lightning2_glare.value=skill_ogg[1][2].play(0)
+
+    lightning2_timer+=fps*2
+    lightning2_elapsed_time=lightning2_timer/100
+    lightning2_elapsed_timer=(lightning2_elapsed_time)//100
+    if lightning2_elapsed_timer<=15:
+        if player_number==0:
+            other_player_x,other_player_y=x_pos2-200,y_pos2-200
+            if lightning2_elapsed_timer<1:
+                screen.blit(img,(other_player_x,other_player_y))
+            if lightning2_elapsed_timer<15:
+                if is_skill_active[2]:
+                    x_velocity2,y_velocity2=-4,-4
+            else:
+                if is_skill_active[2]:
+                    x_velocity2,y_velocity2=4,4
+        elif player_number==1:
+            other_player_x,other_player_y=x_pos1-200,y_pos1-200
+            if lightning2_elapsed_timer<1:
+                screen.blit(img,(other_player_x,other_player_y))
+            if lightning2_elapsed_timer<15:
+                if is_skill_active[6]:
+                    x_velocity1,y_velocity1=-4,-4
+            else:
+                if is_skill_active[6]:
+                    x_velocity1,y_velocity1=4,4
+    elif lightning2_elapsed_timer>15:
+        if player_number==0:
+            is_skill_active[2]=False
+        elif player_number == 1:
+            is_skill_active[6]=False
+
+
+
+
+
+# 초기화 부분 (플레이어 객체 설정)
+player_rect1 = pygame.Rect(screenw//2, screenh//2, player_character_sizew, player_character_sizeh)
+player_rect2 = pygame.Rect(screenw//2, screenh//2, player_character_sizew, player_character_sizeh)
+
+reset_player_rect = []
+lightning2_timer,lightning2_elapsed_time,lightning2_elapsed_timer=0,0,0
+#보류 lightning2_elapsed_time이 계속 0으로 초기화 되는 문제
+arrow_angle1_median,arrow_angle2_median=0,0
+#전광석화 텔레포트
+
+def lightning1_beeline_teleport_end(screen, img, player_rect, player_number,arrow_angle1,arrow_angle2,arrow_angle1_median,arrow_angle2_median):
+    global lightning2_elapsed_time, reset_player_rect,x_pos1,y_pos1,x_pos2,y_pos2,lightning2_timer,lightning2_elapsed_time,lightning2_elapsed_timer,is_skill_active
+    character_size_correction=100
+    # lightning2_elapsed_time = 0
+    # lightning2_timer=0
+    lightning2_timer+=fps*2
+    lightning2_elapsed_time=lightning2_timer/100
+    lightning2_elapsed_timer=(lightning2_elapsed_time)//100
+    if not hasattr(lightning1_beeline_teleport_end, "value"):
+        lightning1_beeline_teleport_end.value=skill_ogg[1][1].play(0)
+    # pygame.draw.circle(screen, RED, (screenw // 2 + character_size_correction, screenh - uiout - player_character_sizeh),5)
+    # pygame.draw.circle(screen, BLUE, (screenw // 2 + character_size_correction, uiout + player_character_sizeh), 5)
+    
+    
+    # print(x_pos1,y_pos1)
+    if lightning2_elapsed_timer<3:
+        if player_number == 0:#1
+            reset_player_rect.append(player_rect1)
+            if lightning2_elapsed_timer < 1:
+                screen.blit(img, reset_player_rect[0])
+            elif lightning2_elapsed_timer>=1 and lightning2_elapsed_timer < 2:
+                screen.blit(img, player_rect1.center)
+            if lightning2_elapsed_timer < 1:
+                screen.blit(img, reset_player_rect[0])
+            elif lightning2_elapsed_timer < 2:
+                screen.blit(img, player_rect1.center)
+                
+            if lightning2_elapsed_timer < 0.1:
+                if arrow_angle1 > arrow_angle1_median:#화살표 상단
+                    x_pos1,y_pos1 = screenw // 2-character_size_correction, +uiout + player_character_sizeh  # 상단\
+                elif arrow_angle1 == arrow_angle1_median:
+                    x_pos1,y_pos1 = 90, screenh // 2  # 초기화
+                else:#화살표 하단
+                    x_pos1,y_pos1 = screenw // 2-character_size_correction, screenh - uiout - player_character_sizeh  # 하단\
+            else:
+                is_skill_active[1]=False
+                reset_player_rect=[]
+        else:#2
+            reset_player_rect.append(player_rect2)
+            if lightning2_elapsed_timer < 1:
+                screen.blit(img, reset_player_rect[0])
+            elif lightning2_elapsed_timer < 2:
+                screen.blit(img, player_rect2.center)
+            if lightning2_elapsed_timer < 0.1:
+                print(f"{int(arrow_angle2)} {int(arrow_angle2_median )}")
+                if arrow_angle2 < arrow_angle2_median:  # 하단
+                    x_pos2, y_pos2 = screenw // 2 + character_size_correction, screenh - uiout - player_character_sizeh
+                elif arrow_angle2 == arrow_angle2_median:  # 중앙
+                    x_pos2, y_pos2 = screenw - 90, screenh // 2
+                else:  # 상단
+                    x_pos2, y_pos2 = screenw // 2 + character_size_correction, uiout + player_character_sizeh
+            else:
+                is_skill_active[5] = False
+                reset_player_rect = []
+ice1_timer,ice1_elapsed_time,ice1_elapsed_timer=0,0,0
+#얼음땡 눈사람이 돼
+def ice1_invincibility(screen, player_number,img,reimg):
+    global x_velocity1,y_velocity1,x_velocity2,y_velocity2,ice1_timer,ice1_elapsed_time,ice1_elapsed_timer,is_skill_active,x_pos1,x_pos2,y_pos1,y_pos2
+    ice1_timer+=fps*2
+    ice1_elapsed_time=ice1_timer/100
+    ice1_elapsed_timer=(ice1_elapsed_time)//100
+    if not hasattr(ice1_invincibility, "value"):
+        ice1_invincibility.value=skill_ogg[3][1].play(0)
+    ice_key=pygame.key.get_pressed()
+    if ice1_elapsed_timer<15:
+        if player_number==0:#플레이어1
+            playerimg[0]=ice_skill[1]
+            if ice_key[pygame.K_w]:
+                y_pos1+=y_velocity1
+            if ice_key[pygame.K_a]:
+                x_pos1+=x_velocity1
+            if ice_key[pygame.K_s]:
+                y_pos1-=y_velocity1
+            if ice_key[pygame.K_d]:
+                x_pos1-=x_velocity1
+
+        else:
+            playerimg[1]=ice_skill[1]
+            if ice_key[pygame.K_UP]:
+                y_pos2+=y_velocity2
+            if ice_key[pygame.K_LEFT]:
+                x_pos2+=x_velocity2
+            if ice_key[pygame.K_DOWN]:
+                y_pos2-=y_velocity2
+            if ice_key[pygame.K_RIGHT]:
+                x_pos2-=x_velocity2
+    else:
+        if player_number==0:
+            playerimg[0]=reimg
+            is_skill_active[2]==False
+        else:
+            playerimg[1]=reimg
+            is_skill_active[7]==False
+#허리케인
+wind3_timer,wind3_elapsed_time,wind3_elapsed_timer=0,0,0
+def wind3_hurricane(screen,player_number,img,player_rect1,player_rect2):
+    global wind3_timer,wind3_elapsed_time,wind3_elapsed_timer,x_pos1,y_pos1,is_skill_active,x_pos2,y_pos2
+    if not hasattr(wind3_hurricane, "value"):
+        wind3_hurricane.value=skill_ogg[4][3].play(0)
+    wind3_timer+=fps*2
+    wind3_elapsed_time=wind3_timer/100
+    wind3_elapsed_timer=(wind3_elapsed_time)//100
+    clock=pygame.time.Clock()
+    wind3_pull_speed=200##중앙으로 끌어 당기는 속도
+    wind3_move_speed = 200#플레이어의 이동 속도
+    wind3_image_width, wind3_image_height = img.get_width(), img.get_height()
+    wind3_dt = clock.tick(fps) / 1000
+    wind3_key=pygame.key.get_pressed()
+    if wind3_elapsed_timer<4:
+        if player_number==0:
+            hurricane_center_x,hurricane_center_y=screenw//4,screenh//2
+            if wind3_key[pygame.K_w]:  # 위로 이동
+                y_pos2 += wind3_move_speed * wind3_dt
+            if wind3_key[pygame.K_s]:  # 아래로 이동
+                y_pos2 -= wind3_move_speed * wind3_dt
+            if wind3_key[pygame.K_a]:  # 왼쪽으로 이동
+                x_pos2 += wind3_move_speed * wind3_dt
+            if wind3_key[pygame.K_d]:  # 오른쪽으로 이동
+                x_pos2 -= wind3_move_speed * wind3_dt
+
+            # 화면 중앙 좌표
+            hurricane_center_x, hurricane_center_y = screenw//2+screenw//4,screenh//2
+
+            # 중앙으로 끌어당기기
+            wind3_dx = hurricane_center_x - x_pos2
+            wind3_dy = hurricane_center_y - y_pos2
+            wind3_distance = math.hypot(wind3_dx, wind3_dy)  # 캐릭터와 중앙 사이의 거리 계산
+
+            if wind3_distance > 0:  # 중앙에 도달하지 않은 경우
+                wind3_move_x = wind3_pull_speed * (wind3_dx / wind3_distance) * wind3_dt
+                wind3_move_y = wind3_pull_speed * (wind3_dy / wind3_distance) * wind3_dt
+
+                # 끌어당기는 효과 적용
+                x_pos2 += wind3_move_x
+                y_pos2 += wind3_move_y
+
+                # 중앙 도달 체크
+                if abs(hurricane_center_x - x_pos2) < 1 and abs(hurricane_center_y - y_pos2) < 1:
+                    x_pos2, y_pos2 = hurricane_center_x, hurricane_center_y
+            wind3_left_x = hurricane_center_x - wind3_image_width // 2
+            wind3_left_y = hurricane_center_y - wind3_image_height // 2
+            screen.blit(img, (wind3_left_x, wind3_left_y))
+        elif player_number == 1:  # Player 1
+            hurricane_center_x, hurricane_center_y = screenw // 4, screenh // 2
+            if wind3_key[pygame.K_w]:  # 위로 이동
+                y_pos1 += wind3_move_speed * wind3_dt
+            if wind3_key[pygame.K_s]:  # 아래로 이동
+                y_pos1 -= wind3_move_speed * wind3_dt
+            if wind3_key[pygame.K_a]:  # 왼쪽으로 이동
+                x_pos1 += wind3_move_speed * wind3_dt
+            if wind3_key[pygame.K_d]:  # 오른쪽으로 이동
+                x_pos1 -= wind3_move_speed * wind3_dt
+
+            # 중앙으로 끌어당기기
+            wind3_dx = hurricane_center_x - x_pos1
+            wind3_dy = hurricane_center_y - y_pos1
+            wind3_distance = math.hypot(wind3_dx, wind3_dy)
+
+            if wind3_distance > 0:
+                wind3_move_x = wind3_pull_speed * (wind3_dx / wind3_distance) * wind3_dt
+                wind3_move_y = wind3_pull_speed * (wind3_dy / wind3_distance) * wind3_dt
+                x_pos1 += wind3_move_x
+                y_pos1 += wind3_move_y
+
+                if abs(hurricane_center_x - x_pos1) < 1 and abs(hurricane_center_y - y_pos1) < 1:
+                    x_pos1, y_pos1 = hurricane_center_x, hurricane_center_y
+
+            wind3_left_x = hurricane_center_x - wind3_image_width // 2
+            wind3_left_y = hurricane_center_y - wind3_image_height // 2
+            screen.blit(img, (wind3_left_x, wind3_left_y))
+    else:
+        if player_number==0:
+            is_skill_active[3]=False
+        else:
+            is_skill_active[7]=False
+
+#아이스 링크
+ice2_timer,ice2_elapsed_time,ice2_elapsed_timer=0,0,0
+def ice2_ice_rink(screen,player_number,img):#플레이어2일때 이미지 아래 생성됨
+    global x_pos1,y_pos1,x_pos2,y_pos2,x_velocity1,y_velocity1,x_velocity2,y_velocity2,ice2_timer,ice2_elapsed_time,ice2_elapsed_timer,is_skill_active
+    if not hasattr(ice2_ice_rink, "value"):
+        ice2_ice_rink.value=skill_ogg[3][2].play(0)
+    ice2_key=pygame.key.get_pressed()
+    ice2_timer+=fps*2
+    ice2_elapsed_time=ice2_timer/100
+    ice2_elapsed_timer=(ice2_elapsed_time)//100
+    if ice2_elapsed_timer<15:
+        if player_number==0:
+            ice2_x,ice2_y=uiout*2,uiout*2
+            if ice2_key[pygame.K_w]:  # 위로 이동
+                y_pos1-=y_velocity1*3
+            if ice2_key[pygame.K_s]:  # 아래로 이동
+                y_pos1+=y_velocity1*3
+            if ice2_key[pygame.K_a]:  # 왼쪽으로 이동
+                x_pos1-=x_velocity1*3
+            if ice2_key[pygame.K_d]:  # 오른쪽으로 이동
+                x_pos1+=x_velocity1*3
+            screen.blit(img,(ice2_x,ice2_y))
+        else:
+            ice2_x,ice2_y=screenw//2+uiout*2,uiout*2
+            if ice2_key[pygame.K_w]:  # 위로 이동
+                y_pos2-=y_velocity2
+            if ice2_key[pygame.K_s]:  # 아래로 이동
+                y_pos2+=y_velocity2
+            if ice2_key[pygame.K_a]:  # 왼쪽으로 이동
+                x_pos2+=x_velocity2
+            if ice2_key[pygame.K_d]:  # 오른쪽으로 이동
+                x_pos2-=x_velocity2
+            screen.blit(img,(ice2_x,ice2_y))
+    else:
+        if player_number==0:
+            is_skill_active[2]=False
+        else:
+            is_skill_active[6]=False
+ground3_timer,ground3_elapsed_time,ground3_elapsed_timer=0,0,0
+earthquake_start=[0,0]
+#어스 퀘이크
+def ground3_earthquake(screen,player_number,img):
+    global ground3_timer,ground3_elapsed_time,ground3_elapsed_timer,earthquake_start,is_skill_active
+    ground3_timer+=fps*2
+    ground3_elapsed_time=ground3_timer/100
+    ground3_elapsed_timer=(ground3_elapsed_time)//100
+    if not hasattr(ground3_earthquake, "value"):
+        ground3_earthquake.value=skill_ogg[2][3].play(0)
+    # earthquake_ran= random.sample(range(0, 4), 4)
+    if ground3_elapsed_timer<15:
+        if player_number==0:
+            earthquake_start[0]=screenw//2+(screenw//2)//5*1
+            earthquake_start[1]=uiout
+            screen.blit(img,(earthquake_start[0],earthquake_start[1]))
+        else:
+            earthquake_start[0]=uiout
+            earthquake_start[1]=uiout
+            screen.blit(img,(earthquake_start[0],earthquake_start[1]))
+    else:
+        if player_number==0:
+            is_skill_active[2]=False
+        else:
+            is_skill_active[7]=False
+ice3_x_up,ice3_y_up=screenw//2,uiout
+ice3_x_down,ice3_y_down=screenw//2,screenh//2-uiout
+ice3_up_down=0
+def ice3_snowball(screen,player_number,img):
+    global ice3_x_up,ice3_y_up,ice3_x_down,ice3_y_down,ice3_up_down
+    rotated_snow = pygame.transform.rotate(img, (pygame.time.get_ticks()//5) % 360)
+    if not hasattr(ice3_snowball, "difference"):  # 처음 호출 시 랜덤 순서 생성
+        ice3_snowball.difference = skill_ogg[3][3].play(0)
+    if not hasattr(ice3_snowball, "value"):  # 속성이 없는 경우
+        ice3_snowball.value = random.sample([1, 2], 2)
+    ice3_up_down=ice3_snowball.value
+    if player_number==0:
+        if ice3_up_down[0]==1:
+            ice3_x_up+=15
+            # y_up+=5
+            screen.blit(rotated_snow,(ice3_x_up,ice3_y_up))
+            if ice3_x_up>screenw:
+                ice3_x_down+=15
+                # y_down+=5
+                screen.blit(rotated_snow,(ice3_x_down,ice3_y_down))
+        else:
+            ice3_x_down+=15
+            # y_up+=5
+            screen.blit(rotated_snow,(ice3_x_down,ice3_y_down))
+            if ice3_x_down>screenw:
+                ice3_x_up+=15
+                # y_down+=5
+                screen.blit(rotated_snow,(ice3_x_up,ice3_y_up))
+    else:
+        if ice3_up_down[0]==1:
+            ice3_x_up-=15
+            # y_up+=5
+            screen.blit(rotated_snow,(ice3_x_up,ice3_y_up))
+            if ice3_x_up<-screenw//2:
+                ice3_x_down-=15
+                # y_down+=5
+                screen.blit(rotated_snow,(ice3_x_down,ice3_y_down))
+        else:
+            ice3_x_down-=15
+            # y_up+=5
+            screen.blit(rotated_snow,(ice3_x_down,ice3_y_down))
+            if ice3_x_down<-screenw//2:
+                ice3_x_up-=15
+                # y_down+=5
+                screen.blit(rotated_snow,(ice3_x_up,ice3_y_up))
+#fire0
+#ground1
+skill3_start_x=[[0 for _ in range(5)],[0 for _ in range(5)]]
+skill3_start_y=[[0 for _ in range(5)],[0 for _ in range(5)]]
+skill3_player_key=0
+skll3_xy=[[0,0],[0,0]]
+skill3_xy_index=[0,0]
+skill3_xy_index_chek=[[0 for _ in range(5)],[0 for _ in range(5)]]
+fire3_timer,fire3_elapsed_time,fire3_elapsed_timer=0,0,0
+#screen, if p1 p2,fire,lightning,p1속성,p2속성 
+def skill3_top_to_bottom(screen, player_number, img0, img1, player1_select, player2_select):
+    global fire3_timer, fire3_elapsed_time, fire3_elapsed_timer, skill3_start_y, skll3_xy, skill3_xy_index, skill3_player_key
+    if not hasattr(skill3_top_to_bottom, "value"):  # 처음 호출 시 랜덤 순서 생성
+        skill3_top_to_bottom.value = random.sample([0, 1, 2, 3, 4], 5)
+    if not hasattr(skill3_top_to_bottom, "difference"):  # 처음 호출 시 랜덤 순서 생성
+        if player_number==0:
+            skill3_top_to_bottom.difference = skill_ogg[player1_select][3].play(0)
+        if player_number==1:
+            skill3_top_to_bottom.difference = skill_ogg[player2_select][3].play(0)
+    skill_top_start_xy = skill3_top_to_bottom.value  # 랜덤 순서 저장
+    fire3_timer += fps * 2
+    fire3_elapsed_time = fire3_timer / 100
+    fire3_elapsed_timer = fire3_elapsed_time // 100
+    skill3_speed = 30
+
+    def handle_skill(player_select, img0, img1, is_player1=True):
+        skill3_player_key = 1 if is_player1 else 0  # 플레이어 키 선택
+        
+        if fire3_elapsed_timer < 5:
+            for skill3_i in range(5):  # 0~4 랜덤 위치로 반복
+                current_position = skill_top_start_xy[skill3_i]  # 랜덤 순서에서 현재 위치 가져오기
+                if skill3_xy_index[skill3_player_key] == skill3_i:  # 현재 인덱스 확인
+                    # X축 위치 설정 (플레이어에 따라 다름)
+                    skll3_xy[skill3_player_key][0] = ((screenw//2+ (screenw // 2) // 5 * current_position) if not is_player1 
+                        else ((screenw // 2) // 5 * current_position)
+                    )
+                    # Y축 위치 변경
+                    skll3_xy[skill3_player_key][1] += skill3_speed
+
+                    # 스킬 이미지 출력
+                    if not is_player1 and player1_select == 0:  # Player 1 Fire
+                        screen.blit(img0, (skll3_xy[skill3_player_key][0], skll3_xy[skill3_player_key][1]))
+                        skill3_start_y = img0.get_height()
+                    elif is_player1 and player2_select == 0:  # Player 2 Fire
+                        screen.blit(img0, (skll3_xy[skill3_player_key][0], skll3_xy[skill3_player_key][1]))
+                        skill3_start_y = img0.get_height()
+                    elif not is_player1 and player1_select == 1:  # Player 1 Lightning
+                        screen.blit(img1, (skll3_xy[skill3_player_key][0], skll3_xy[skill3_player_key][1]))
+                        skill3_start_y = img1.get_height()
+                    elif is_player1 and player2_select == 1:  # Player 2 Lightning
+                        screen.blit(img1, (skll3_xy[skill3_player_key][0], skll3_xy[skill3_player_key][1]))
+                        skill3_start_y = img1.get_height()
+
+                    # 화면 밖으로 나가면 다음 스킬로 전환
+                    if skll3_xy[skill3_player_key][1] > screenh:
+                        skill3_xy_index[skill3_player_key] += 1
+                        skll3_xy[skill3_player_key][1] = -skill3_start_y  # 스킬 Y 위치 초기화
+            
+
+        else:  # 스킬 지속 시간이 종료되면
+            if not is_player1:  # Player 1
+                is_skill_active[3] = False
+            else:  # Player 2
+                is_skill_active[7] = False
+
+    if player_number == 0:  # Player 1
+        handle_skill(player1_select, img0, img1, is_player1=False)
+    else:  # Player 2
+        handle_skill(player2_select, img0, img1, is_player1=True)
+
+
+ground2_timer,ground2_elapsed_time,ground2_elapsed_timer=0,0,0
+def ground2_invincibility(screen, player_number,img,reimg):
+    global ground2_timer,ground2_elapsed_time,ground2_elapsed_timer,x_pos1,y_pos1,x_pos2,y_pos2
+    ground2_timer+=fps*2
+    ground2_elapsed_time=ground2_timer/100
+    ground2_elapsed_timer=(ground2_elapsed_time)//100
+    if not hasattr(ground2_invincibility, "value"):
+        ground2_invincibility.value=skill_ogg[2][2].play(0)
+    ground_key=pygame.key.get_pressed()
+    if ground2_elapsed_timer<15:
+        if player_number==0:#플레이어1
+            playerimg[0]=img
+            if ground_key[pygame.K_w]:
+                y_pos1+=y_velocity1
+            if ground_key[pygame.K_a]:
+                x_pos1+=x_velocity1
+            if ground_key[pygame.K_s]:
+                y_pos1-=y_velocity1
+            if ground_key[pygame.K_d]:
+                x_pos1-=x_velocity1
+
+        else:
+            playerimg[1]=img
+            if ground_key[pygame.K_UP]:
+                y_pos2+=y_velocity2
+            if ground_key[pygame.K_LEFT]:
+                x_pos2+=x_velocity2
+            if ground_key[pygame.K_DOWN]:
+                y_pos2-=y_velocity2
+            if ground_key[pygame.K_RIGHT]:
+                x_pos2-=x_velocity2
+    else:
+        if player_number==0:
+            playerimg[0]=reimg
+            is_skill_active[6]==False
+        else:
+            playerimg[1]=reimg
+            is_skill_active[2]==False
+    
+wind1_timer,wind1_elapsed_time,wind1_elapsed_timer=0,0,0
+def wind1_protection_invalidation(screen, player_number,img,player_rect1,player_rect2):
+    global wind1_timer,wind1_elapsed_time,wind1_elapsed_timer
+    wind1_timer+=fps*2
+    wind1_elapsed_time=wind1_timer/100
+    wind1_elapsed_timer=(wind1_elapsed_time)//100
+    if not hasattr(wind1_protection_invalidation, "value"):
+        wind1_protection_invalidation.value=skill_ogg[4][1].play(0)
+    if player_number==0:
+        wind1_player1_front_x = x_pos1 + (player_character_sizew // 2)  # 플레이어 1의 앞쪽 위치
+        wind1_player1_front_y = y_pos1  # 플레이어 1의 Y 좌표와 동일
+        screen.blit(img, (wind1_player1_front_x, wind1_player1_front_y-50))#0123 4567
+        for wind1_i0 in range(4,8):
+            is_skill_active[wind1_i0]=False
+    else:
+        wind1_player2_front_x = x_pos2 + (player_character_sizew // 2)  # 플레이어 1의 앞쪽 위치
+        wind1_player2_front_y = y_pos2  # 플레이어 1의 Y 좌표와 동일
+        screen.blit(img, (wind1_player2_front_x-150, wind1_player2_front_y-50))#0123 4567
+        for wind1_i1 in range(0,4):
+            is_skill_active[wind1_i1]=False
+
+
+
+# def ice3_snowball(screen,player_number,img):
+#     global ice3_timer,ice3_elapsed_time,ice3_elapsed_timer
+#     ice3_timer+=fps*2
+#     ice3_elapsed_time=ice3_timer/100
+#     ice3_elapsed_timer=(ice3_elapsed_time)//100
+#     if ice3_elapsed_timer<15:
+#         #리스트 안에서 2개의 원소를 뽑겠다
+#         up_down = random.sample([1,2], 2)
+#         if ice3_elapsed_timer<20:
+#             if player_number:
+#                 ice3_x_up,ice3_y_up=uiout,uiout
+#                 ice3_x_down,ice3_y_down=uiout,screenh//2-uiout
+#                 if up_down[0]==1:
+#                     ice3_x_up+=5
+#                     # y_up+=5
+#                     screen.blit(img,(ice3_x_up,ice3_y_up))
+#                     if ice3_x_up>screenh:
+#                         ice3_x_down+=5
+#                         # y_down+=5
+#                         screen.blit(img,(ice3_x_down,ice3_y_down))
+#             else:
+#                 snow_w=img.get_width()
+#                 ice3_x_up,ice3_y_up=uiout-snow_w,uiout
+#                 ice3_x_down,ice3_y_down=uiout-snow_w,screenh//2+uiout
+#                 ice3_x_up-=5
+#                 # y_up+=5
+#                 screen.blit(img,(ice3_x_up,ice3_y_up))
+#                 if ice3_x_up>screenh:
+#                     ice3_x_down+=5
+#                     # y_down+=5
+#                     screen.blit(img,(ice3_x_down,ice3_y_down))
+#     else:
+#         if player_number==0:
+#             is_skill_active[3]=False
+#         else:
+#             pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+        
+    
+    
+    
+
+
+
+
+#플레이어 속도 증가 및 주변 파티클
+# Fire particles
+fire2_particles = []
+fire2_player_increase_speed_start_time = None
+fire2_player1_prev_pos = None
+fire2_player2_prev_pos = None
+fire2_player_increase_speed_elapsed_time = 0
+
+# Wind particles
+wind2_particles = []
+wind2_player_increase_speed_start_time = None
+wind2_player1_prev_pos = None
+wind2_player2_prev_pos = None
+wind2_player_increase_speed_elapsed_time = 0
+def fire2_update_particles(fire2_particles, player_rect, prev_pos, fire2_skill_image):
+    def fire2_create_and_add_particle(position):
+        fire2_particle = {
+            "position": position,
+            "positiontime": random.randint(20, 50),
+            "image": fire2_skill_image,
+        }
+        fire2_particles.append(fire2_particle)
+
+    if player_rect.center != prev_pos:
+        fire2_create_and_add_particle((player_rect.centerx + random.randint(-30, 30),
+                                  player_rect.centery + random.randint(-10, 10)))
+        return player_rect.center  # 새로운 이전 위치 반환
+
+    return prev_pos  # 이전 위치 그대로 반환
+def fire2_update_and_draw_particles(screen, fire2_particles):
+    for fire2_particle in fire2_particles[:]:
+        screen.blit(fire2_particle["image"], fire2_particle["position"])
+        fire2_particle["positiontime"] -= 1
+        if fire2_particle["positiontime"] <= 0:
+            fire2_particles.remove(fire2_particle)
+#불스터
+def fire2_player_increase_speed(screen, player_number, img, player_rect1, player_rect2):
+    global x_velocity1, y_velocity1, x_velocity2, y_velocity2
+    global fire2_player_increase_speed_start_time, fire2_player_increase_speed_elapsed_time
+    global fire2_player1_prev_pos, fire2_player2_prev_pos, fire2_particles
+    if not hasattr(fire2_player_increase_speed, "value"):
+        fire2_player_increase_speed.value=skill_ogg[0][2].play(0)
+    if fire2_player_increase_speed_start_time is None:
+        fire2_player_increase_speed_start_time = pygame.time.get_ticks()
+
+    fire2_elapsed_time = (pygame.time.get_ticks() - fire2_player_increase_speed_start_time) // 1000
+
+    if fire2_player_increase_speed_elapsed_time < 15:
+        if player_number == 0:
+            x_velocity1, y_velocity1 = 20, 20
+            fire2_player1_prev_pos = fire2_update_particles(fire2_particles, player_rect1, fire2_player1_prev_pos, img)
+        else:
+            x_velocity2, y_velocity2 = 20, 20
+            fire2_player2_prev_pos = fire2_update_particles(fire2_particles, player_rect2, fire2_player2_prev_pos, img)
+
+        fire2_update_and_draw_particles(screen, fire2_particles)
+
+    else:
+        if player_number == 0:
+            x_velocity1, y_velocity1 = 3, 3
+        else:
+            x_velocity2, y_velocity2 = 3, 3
+
+        fire2_player_increase_speed_start_time = None
+        fire2_player_increase_speed_elapsed_time = 0
+
+def wind2_update_particles(wind2_particles, player_rect, prev_pos, wind2_skill_image):
+    def wind2_create_and_add_particle(position):
+        wind2_particle = {
+            "position": position,
+            "positiontime": random.randint(20, 50),
+            "image": wind2_skill_image,
+        }
+        wind2_particles.append(wind2_particle)
+
+    if player_rect.center != prev_pos:
+        wind2_create_and_add_particle((player_rect.centerx + random.randint(-30, 30),
+                                  player_rect.centery + random.randint(-10, 10)))
+        return player_rect.center  # 새로운 이전 위치 반환
+
+    return prev_pos  # 이전 위치 그대로 반환
+
+def wind2_update_and_draw_particles(screen, wind2_particles):
+    for wind2_particle in wind2_particles[:]:
+        screen.blit(wind2_particle["image"], wind2_particle["position"])
+        wind2_particle["positiontime"] -= 1
+        if wind2_particle["positiontime"] <= 0:
+            wind2_particles.remove(wind2_particle)
+#바람의 춤
+def wind2_player_increase_speed(screen, player_number, img, qwer, player_rect1, player_rect2):
+    global x_velocity1, y_velocity1, x_velocity2, y_velocity2
+    global wind2_player_increase_speed_start_time, wind2_player_increase_speed_elapsed_time
+    global wind2_player1_prev_pos, wind2_player2_prev_pos, wind2_particles
+    if not hasattr(wind2_player_increase_speed, "value"):
+        wind2_player_increase_speed.value=skill_ogg[4][2].play(0)
+    if wind2_player_increase_speed_start_time is None:
+        wind2_player_increase_speed_start_time = pygame.time.get_ticks()
+
+    wind2_elapsed_time = (pygame.time.get_ticks() - wind2_player_increase_speed_start_time) // 1000
+
+    if wind2_player_increase_speed_elapsed_time < 15:
+        if player_number == 0:
+            x_velocity1, y_velocity1 = 20, 20
+            wind2_player1_prev_pos = wind2_update_particles(wind2_particles, player_rect1, wind2_player1_prev_pos, img)
+        else:
+            x_velocity2, y_velocity2 = 20, 20
+            wind2_player2_prev_pos = wind2_update_particles(wind2_particles, player_rect2, wind2_player2_prev_pos, img)
+
+        wind2_update_and_draw_particles(screen, wind2_particles)
+
+    else:
+        if player_number == 0:
+            x_velocity1, y_velocity1 = 3, 3
+        else:
+            x_velocity2, y_velocity2 = 3, 3
+
+        wind2_player_increase_speed_start_time = None
+        wind2_player_increase_speed_elapsed_time = 0
+
+
+
+
+
+    
+    
+    
+def main():
+    global x_velocity1,y_velocity1,x_velocity2,y_velocity2,arrow_angle1_max,arrow_angle2_min,arrow_angle1_max,arrow_angle2_min,lightning2_elapsed_time,reset_player_rect,lightning2_elapsed_timer,lightning2_timer,arrow_angle1_median,arrow_fix_tsub_angle,fire1_timer,fire1_elapsed_time,fire1_elapsed_timer,ground1_timer,ground1_elapsed_time,ground1_elapsed_timer,ice1_timer,ice1_elapsed_time,ice1_elapsed_timer,ice2_timer,ice2_elapsed_time,ice2_elapsed_timer,ground3_timer,ground3_elapsed_time,ground3_elapsed_timer,ice3_timer,ice3_elapsed_time,ice3_elapsed_timer,fire3_timer,fire3_elapsed_time,fire3_elapsed_timer,ground2_timer,ground2_elapsed_time,ground2_elapsed_timer,wind1_timer,wind1_elapsed_time,wind1_elapsed_timer,game_winer
+    pygame.init()
+    
+    pygame.display.set_caption("pygame project")
+    screen=pygame.display.set_mode((screenw, screenh))
+    clock=pygame.time.Clock()
+    font=pygame.font.SysFont(font_type[4], 30,True,True)#폰트 / fonttype,size,굵기,기울기
+    font_title = pygame.font.SysFont('hy견고딕', 35, False, False)
+    font_select = pygame.font.SysFont('hy견고딕', 30, True, False)#캐릭터 선택 폰트
+    font_key_select = pygame.font.SysFont('hy견고딕', 20, True, False)#캐릭터 선택 스킬 키 폰트
+    for _ in range(2):
+            for __ in range(4):
+                if _==0:
+                    skilltxtoutput[_][__]=font.render(keys[_][__],True,skill_txt_color[1])#스킬 키 대입XCVB
+                else:
+                    skilltxtoutput[_][__]=font.render(keys[_][3-__],True,skill_txt_color[1])#스킬 키 대입UIOP
+    global x_pos1, y_pos1, x_pos2, y_pos2,playerimg,timer_fps,hpuiw1,hpuiw2,player1_select,player2_select,game_screen_index#값을 참조만 하는 것 뿐 아니라 변경하기에 global해야함
+    facing_right1,facing_right2=True,True#플레이어가 오른쪽을 보는가?
+    
+            
+    
+
+    while True:
+        for event in pygame.event.get():
+            if event.type==pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        if game_screen_index==0:#타이틀
+            draw_menu_buttons(screen, font_title)
+        elif game_screen_index==1:#게임 설명
+            game_screen_index=game_way(screen,font)
+        #game_screen_index==2 종료
+        elif game_screen_index==3:#이야기1, 밀레니아 설명
+            player1_select,player2_select=0,0
+            game_screen_index=window_chat(screen,font,0,4,window_chat_background,True)
+        elif game_screen_index==4:#캐릭터 선택
+            while player1_select is None:
+                selected_character = select_character(1, screen, font_select, font_key_select, skill_select_txt, character_color, clock)
+                player1_select = confirm_selection(1, selected_character, screen, font_select, font_key_select, skill_select_txt, character_color, clock)
+                playerimg[0]=player_img[player1_select]
+            while player2_select is None:
+                selected_character = select_character(2, screen, font_select, font_key_select, skill_select_txt, character_color, clock)
+                player2_select = confirm_selection(2, selected_character, screen, font_select, font_key_select, skill_select_txt, character_color, clock)
+                playerimg[1]=player_img[player2_select]
+                game_screen_index=5
+                select_skill_basket = [  # 선택한 플레이어1,2에 대한 스킬 배치
+                    select_skill[player1_select][0],  # player1 X
+                    select_skill[player1_select][1],  # C
+                    select_skill[player1_select][2],  # V
+                    select_skill[player1_select][3],  # B
+                    select_skill[player2_select][3],  # player2 U
+                    select_skill[player2_select][2],  # I
+                    select_skill[player2_select][1],  # O
+                    select_skill[player2_select][0],  # P
+                ]
+                
+        elif game_screen_index==5:#포부
+            font=pygame.font.SysFont(font_type[4], 30,False,True)
+            game_screen_index=window_chat(screen,font,5,6,window_chat_background)
+            font=pygame.font.SysFont(font_type[3], 30,True,True)
+        elif game_screen_index==6:#전투
+            # for i in range(2):
+            #     for j in range(4):
+            #         skill_data[i][j]['angle']=0
+            #         skill_data[i][j]['start_time']=pygame.time.get_ticks()
+            
+            if not hasattr(main, "value"):  # 속성이 없는 경우
+                main.value = player2_transform_flip(player2_select)#플레이어 스킬 좌우대칭
+                background_ogg[1].stop()
+                background_ogg[2].play(-1)
+            
+            # ice3_up_down=main.value
+            
+                
+            for player in range(2):#스킬 사용 가능 여부 표시
+                for skill_index in range(4):
+                    if skill_data[player][skill_index]['angle'] >= 360:
+                        TFskill_txt_color = skill_txt_color[1]  # 스킬 사용 가능
+                    else:
+                        TFskill_txt_color = skill_txt_color[0]  # 스킬 사용 불가능
+                    if player==0:
+                        skilltxtoutput[player][skill_index] = font.render(keys[player][skill_index], True, TFskill_txt_color)
+                    else:
+                        skilltxtoutput[player][skill_index] = font.render(keys[player][3-skill_index], True, TFskill_txt_color)
+
+                
+            
+            #UI
+            pygame.draw.rect(screen,SKILL_BACKGROUND_COLOR,(0,0,screenw//2,screenh))#왼쪽 절반 채움
+            pygame.draw.rect(screen,SKILL_BACKGROUND_COLOR,(screenw//2,0,screenw//2,screenh))#오른쪽 절반 채움
+            pygame.draw.line(screen,WHITE,(screenw//2,0),(screenw//2,screenh),2)
+            pygame.draw.rect(screen,GRAY,(0,0,screenw,screenh),uiout)#상하좌우 테두리pygame.draw.rect(screen,BLACK,(0,0,screenw,screenh),20,20)
+
+            pygame.draw.rect(screen,GRAY,(0,screenh-uih,uiw,uih),1000)#스킬 띠우는 뒷 배경1
+            pygame.draw.polygon(screen,GRAY,[[uiw,screenh-uih],[uiw,screenh],[uiw+uipol,screenh]],0)#스킬 띠우는 뒷 배경 오른쪽 삼각형1
+            pygame.draw.rect(screen,GRAY,(screenw-uiw,screenh-uih,uiw,uih),1000)#스킬 띠우는 뒷 배경2
+            pygame.draw.polygon(screen,GRAY,[[screenw-uiw,screenh-uih],[screenw-uiw,screenh],[screenw-uiw-uipol,screenh]],0)#스킬 띠우는 뒷 배경 왼쪽 삼각형2
+
+            # pygame.draw.rect(screen, RED, (hpw1 + (400 - hpuiw1), hph1, hpuiw1, hpuih1), 20)  # 플레이어 1 HP
+            # pygame.draw.rect(screen,RED,(screenw//2+hpw2,hph2,hpuiw2,hpuih2),20)#플레이어 2 HP
+            # hpuiw1-=1
+            # hpuiw2-=1
+
+            font=pygame.font.SysFont(font_type[0], 30,False,True)
+            skill(screen,font,player1_select,player2_select)#스킬 UI 띄우기
+            font=pygame.font.SysFont(font_type[3], 30,False,True)
+            # timer(screen,screenw//2,screenh//2)
+            key=pygame.key.get_pressed()
+            if key[pygame.K_w]:#플레이어1 움직임 상호작용
+                if y_pos1<0+uiout+player_character_sizeh//2:#플레이어가 테두리 벗어나려하면
+                    pass#그 위치 그대로
+                else:
+                    y_pos1-=y_velocity1#y_velocity의 속도로 움직임
+            if key[pygame.K_a]:
+                if x_pos1<uiout+player_character_sizew//2:
+                    pass
+                else:
+                    x_pos1-=x_velocity1
+                if facing_right1==True: #오른쪽 보고 있었으면, 반대 보게
+                    playerimg[0]=pygame.transform.flip(playerimg[0],True,False)#사진 좌우 반전
+                    facing_right1=False# 왼쪽 보고 있게
+            if key[pygame.K_s]:
+                if y_pos1>screenh-uiout-player_character_sizeh//2:
+                    pass
+                else:
+                    y_pos1+=y_velocity1
+            if key[pygame.K_d]:
+                if x_pos1>screenw//2-player_character_sizew//2:
+                    pass
+                else:
+                    x_pos1+=x_velocity1
+                if facing_right1==False: #왼쪽 보고 있었으면, 반대 보게
+                    playerimg[0]=pygame.transform.flip(playerimg[0],True,False)
+                    facing_right1=True# 오른쪽 보고 있게
+            if key[pygame.K_7]:
+                game_winer=True
+                game_screen_index=7
+
+            #플레이어2 움직임 상호작용
+            if key[pygame.K_UP]:#▲
+                if y_pos2<0+uiout+player_character_sizeh//2:#플레이어가 테두리 벗어나려하면
+                    pass#그 위치 그대로
+                else:
+                    y_pos2-=y_velocity2#y_velocity의 속도로 움직임
+            if key[pygame.K_LEFT]:#◀
+                # if x_pos2<0-uiout:
+                if x_pos2<screenw//2+player_character_sizew//2:
+                    pass
+                else:
+                    x_pos2-=x_velocity2
+                if facing_right2==True: #오른쪽 보고 있었으면, 반대 보게
+                    playerimg[1]=pygame.transform.flip(playerimg[1],True,False)
+                    facing_right2=False# 왼쪽 보고 있게
+            if key[pygame.K_DOWN]:#▼
+                if y_pos2>screenh-uiout-player_character_sizeh//2:
+                    pass
+                else:
+                    y_pos2+=y_velocity2
+            if key[pygame.K_RIGHT]:#▶
+                # if x_pos1>screenw-uiout:
+                if x_pos2>screenw-uiout-player_character_sizew//2:
+                    pass
+                else:
+                    x_pos2+=x_velocity2
+                if facing_right2==False: #왼쪽 보고 있었으면, 반대 보게
+                    playerimg[1]=pygame.transform.flip(playerimg[1],True,False)
+                    facing_right2=True# 오른쪽 보고 있게
+            
+            #XCVB, UIOP
+            if skill_data[0][0]['angle']>=360:
+                if key[pygame.K_x]:
+                    skill_data[0][0]['angle']=0
+                    skill_data[0][0]['start_time']=pygame.time.get_ticks()
+                    timer_dis[0][0]=0;timer_fps[0][0]=0#cooldown_finish_effect실행 후에 다시 스킬을 누를때에 시간 재는 timer_dis,timer_fps가 초기화되도록
+                    skill_x[0], skill_y[0] = player_rect1.center
+                    is_skill_active[0] = True
+                    
+            if skill_data[0][1]['angle']>=360:
+                if key[pygame.K_c]:
+                    skill_data[0][1]['angle']=0
+                    skill_data[0][1]['start_time']=pygame.time.get_ticks()
+                    timer_dis[0][1]=0;timer_fps[0][1]=0
+                    is_skill_active[1] = True
+            if skill_data[0][2]['angle']>=360:
+                if key[pygame.K_v]:
+                    skill_data[0][2]['angle']=0
+                    skill_data[0][2]['start_time']=pygame.time.get_ticks()
+                    timer_dis[0][2]=0;timer_fps[0][2]=0
+                    skill_x[2], skill_y[2] = player_rect1.center
+                    is_skill_active[2] = True
+            if skill_data[0][3]['angle']>=360:
+                if key[pygame.K_b]:
+                    skill_data[0][3]['angle']=0
+                    skill_data[0][3]['start_time']=pygame.time.get_ticks()
+                    timer_dis[0][3]=0;timer_fps[0][3]=0
+                    skill_x[3], skill_y[3] = player_rect1.center
+                    is_skill_active[3] = True
+            
+            if skill_data[1][3]['angle']>=360:
+                if key[pygame.K_u]:
+                    skill_data[1][3]['angle']=0
+                    skill_data[1][3]['start_time']=pygame.time.get_ticks()
+                    timer_dis[1][3]=0;timer_fps[1][3]=0
+                    skill_x[4], skill_y[4] = player_rect2.center
+                    is_skill_active[4] = True
+            if skill_data[1][2]['angle']>=360:
+                if key[pygame.K_i]:
+                    skill_data[1][2]['angle']=0
+                    skill_data[1][2]['start_time']=pygame.time.get_ticks()
+                    timer_dis[1][2]=0;timer_fps[1][2]=0
+                    skill_x[5], skill_y[5] = player_rect2.center
+                    is_skill_active[5] = True
+            if skill_data[1][1]['angle']>=360:
+                if key[pygame.K_o]:
+                    skill_data[1][1]['angle']=0
+                    skill_data[1][1]['start_time']=pygame.time.get_ticks()
+                    timer_dis[1][1]=0;timer_fps[1][1]=0
+                    skill_x[6], skill_y[6] = player_rect2.center
+                    is_skill_active[6] = True
+            if skill_data[1][0]['angle']>=360:
+                if key[pygame.K_p]:
+                    skill_data[1][0]['angle']=0
+                    skill_data[1][0]['start_time']=pygame.time.get_ticks()
+                    timer_dis[1][0]=0;timer_fps[1][0]=0
+                    skill_x[7], skill_y[7] = player_rect2.center
+                    is_skill_active[7] = True
+            # 화면 중앙 좌표
+            
+
+            # 화살표 각도 계산 (일정한 속도로 진자운동)
+            time = pygame.time.get_ticks() / 1000  # 초 단위 시간
+            arrow_fix_angle = 270+90 * math.sin(time)  # 180도에서 360도 사이로 진자운동
+            
+            # 반원 이미지 생성 (화살표 각도에 따라)
+            half_circle_image1 = create_half_circle_with_arrow(arrow_fix_angle)
+            half_circle_image2 = create_half_circle_with_arrow(arrow_fix_angle)
+
+            # 플레이어 1 각도 계산 및 반원 회전
+            dx1 = screen_center[0] - player_rect1.centerx
+            dy1 = screen_center[1] - player_rect1.centery
+            px1 = player_rect1.centerx
+            py1 = player_rect1.centery
+            try:
+                lnc_p1=-(player_rect1.centery-screen_center[1])/(screen_center[0]-player_rect1.centerx)#중점과 플레이어 사이 기울기
+                sub_a=math.degrees(math.atan((-player_rect1.centery+screen_center[1])/(screen_center[0]-player_rect1.centerx)))#중점과 플레이어 사이 세타값
+            except ZeroDivisionError:
+                pass
+            # if player_rect1.centery< screenx // 2 and < screenh // 2
+            
+            
+            angle1 = math.degrees(math.atan2(dy1, dx1))  # 각도 계산 (-180 ~ 180)
+            test_angle1=math.degrees(math.atan2(dx1, dy1)-180)%180
+            rotated_half_circle1 = pygame.transform.rotate(half_circle_image1, -angle1+90)
+            rotated_rect1 = rotated_half_circle1.get_rect(center=player_rect1.center)
+            
+            
+            # # 플레이어 2 각도 계산 및 반원 회전
+            dx2 = screen_center[0] - player_rect2.centerx
+            dy2 = screen_center[1] - player_rect2.centery
+            px2 = player_rect2.centerx
+            py2 = player_rect2.centery
+            try:
+                lnc_p2=-(screen_center[1]-player_rect2.centery)/(player_rect2.centerx-screen_center[0])#중점과 플레이어 사이 기울기
+                sub_b=math.degrees(math.atan(-(-player_rect2.centery+screen_center[1])/(screen_center[0]-player_rect2.centerx)))#중점과 플레이어 사이 세타값
+            except ZeroDivisionError:
+                pass
+            angle2 = -math.degrees(math.atan2(dy2, dx2))+90  # 각도 계산 (-180 ~ 180)
+            test_angle2=math.degrees(math.atan2(dx2, dy2)-180)%180
+            rotated_half_circle2 = pygame.transform.rotate(half_circle_image2, angle2)
+            rotated_rect2 = rotated_half_circle2.get_rect(center=player_rect2.center)
+            # player1(arrow_angle-180)#위:180 아래:0
+            player1_skill_angle=(-angle1+180)%360
+            # player2(arrow_angle-180)#위:0 아래:180 -180,-360 논의 필요성
+            player2_skill_angle=(-angle2+180)%360
+            # player1(arrow_angle-180)#위:180 아래:0
+            # player1_skill_angle=(arrow_angle-90)+angle1
+            # player2(arrow_angle-180)#위:0 아래:180 -180,-360 논의 필요성
+            # player2_skill_angle=((arrow_angle+180)+angle2+30+90+180+20+40+90+180)%360
+            # player1_skill_angle=(arrow_angle+test_angle1+180)%360
+            # player2_skill_angle=(arrow_angle+test_angle2+360)%360
+            # arrow_fix_sub_angle=((-arrow_fix_angle+270+324+13)+test_angle1+sub_a/2)%360#90~270 체제
+            # arrow_angle1_max=arrow_fix_sub_angle+sub_a/2 # max 270 + sub_a + sub_a/2 90 +
+            # arrow_angle1_min=(arrow_fix_sub_angle-sub_b/2+180)%360
+            # arrow_angle2_max=arrow_fix_sub_angle+sub_a+sub_a/2 # max 90 + sub_a + sub_a/2 270
+            # arrow_angle2_min=(arrow_fix_sub_angle-sub_b/2+180)%360
+            # arrow_angle1=arrow_fix_sub_angle+sub_a/2-15
+            # arrow_angle2=(arrow_fix_sub_angle-sub_b/2+180)%360
+            arrow_fix_sub_angle=((-arrow_fix_angle-90))%360#90~270 체제
+            arrow_angle1=arrow_fix_sub_angle+sub_a/2
+            arrow_angle2=(arrow_fix_sub_angle-sub_b/2+180)%360+1
+            arrow_angle1_median=((270+sub_a/2)+(90+sub_a/2))/2
+            arrow_angle2_median=(((270-sub_b/2+180)%360+(90-sub_b/2+180)%360)+2)/2
+
+            #
+            center_x = screen.get_width() // 2
+            center_y = screen.get_height() // 2
+            # 텍스트 렌더링
+            text_surface = font.render(f"{int(arrow_angle2)} {int(arrow_angle2_median )}", True, BLACK)
+            #
+            # 텍스트 위치 계산 (중앙 정렬)
+            text_rect = text_surface.get_rect(center=(center_x, center_y))
+
+            # 텍스트 화면에 출력
+            screen.blit(text_surface, text_rect)
+            # print(arrow_angle2)
+            # skill_manifold=[
+            # [0,1,2,3],#fire
+            # [0,4,5,3],#lightning
+            # [0,6,7,8],#ground
+            # [0,7.5,9,8.5],#ice
+            # [0,10,2,11]#wind
+            #]
+            #player_increase_speed(screen, player_number,img,qwer,player_rect1,player_rect2)
+            #플레이어1
+            angle1_text = font.render(f"Angle1: {int(arrow_angle1)}°", True, RED)
+            angle2_text = font.render(f"Angle2: {int(arrow_angle2)}°", True, BLUE)
+            # 텍스트 위치 설정
+            angle1_pos = (screenw // 4 - angle1_text.get_width() // 2, screenh // 2 - angle1_text.get_height() // 2)
+            angle2_pos = (3 * screenw // 4 - angle2_text.get_width() // 2, screenh // 2 - angle2_text.get_height() // 2)
+            # 텍스트 화면에 그리기
+            screen.blit(angle1_text, angle1_pos)
+            screen.blit(angle2_text, angle2_pos)
+            if is_skill_active[0]:#Q0X skill0 key[pygame.K_x] beeline_skill0(screen, player_number, img, qwer, player_rect1, player_rect2, angle, player1_select, player2_select)
+                beeline_skill0(screen, 0,skillimg[player1_select][0],skillimg[player2_select][0],0,player_rect1,player_rect2,(arrow_angle1,arrow_angle2),player1_select,player2_select)
+                # beeline_skill0(screen, 0,skillimg[player1_select][0],skillimg[player2_select][0],(arrow_angle1,arrow_angle2))
+            if is_skill_active[1]:#W1C key[pygame.K_c]
+                if player1_select==0:#fire
+                    if  key[pygame.K_c]:
+                        fire1_timer,fire1_elapsed_time,fire1_elapsed_timer=0,0,0
+                    skill_wall1(screen, 0,skillimg[player1_select][1],0)
+                if player1_select==1:#lightning
+                    if key[pygame.K_c]:
+                        lightning2_timer,lightning2_elapsed_time,lightning2_elapsed_timer=0,0,0
+                    lightning1_beeline_teleport_end(screen,skillimg[player1_select][1],player_rect1,0,arrow_angle1,arrow_angle2,arrow_angle1_median,arrow_angle2_median)
+                if player1_select==2:#ground
+                    if  key[pygame.K_c]:
+                        ground1_timer,ground1_elapsed_time,ground1_elapsed_timer=0,0,0
+                    skill_wall1(screen, 0,skillimg[player1_select][1],2)
+                if player1_select==3:#ice
+                    if key[pygame.K_c] :
+                        ice1_timer,ice1_elapsed_time,ice1_elapsed_timer=0,0,0
+                    ice1_invincibility(screen, 0,skillimg[player1_select][2],player_img[3])
+                if player1_select==4:#wind
+                    if key[pygame.K_c]:
+                        wind1_timer,wind1_elapsed_time,wind1_elapsed_timer=0,0,0
+                    wind1_protection_invalidation(screen, 0,skillimg[player1_select][1],player_rect1,player_rect2)
+            if is_skill_active[2]:#E2V key[pygame.K_v] 
+                if player1_select==0:#fire
+                    fire2_player_increase_speed(screen, player1_select,skillimg[player1_select][2],player_rect1,player_rect2)
+                if player1_select==1:#섬광#lightning
+                    lightning2_glare(screen,0,skillimg[player1_select][2],player_rect1,player_rect2)
+                if player1_select==2:#단단하게#ground
+                    ground2_invincibility(screen, 0,ground_skill[2],player_img[2])#skillimg[player1_select][2]로 접근 안됨
+                if player1_select==3:#아이스링크#ice
+                    ice2_ice_rink(screen,0,skillimg[player1_select][2])
+                if player1_select==4:#바람의춤#wind
+                    wind2_player_increase_speed(screen, 0,skillimg[player1_select][2],4,player_rect1,player_rect2)
+            if is_skill_active[3]:#R3B key[pygame.K_b]
+                if player1_select==0:#운석#fire
+                    skill3_top_to_bottom(screen,0,skillimg[0][3],skillimg[1][3],player1_select,player2_select)
+                if player1_select==1:#청천벽력
+                    skill3_top_to_bottom(screen,0,skillimg[0][3],skillimg[1][3],player1_select,player2_select)
+                if player1_select==2:#지진#ground
+                    if key[pygame.K_b]:
+                        ground3_timer,ground3_elapsed_time,ground3_elapsed_timer=0,0,0
+                    ground3_earthquake(screen,0,skillimg[player1_select][3])
+                if player1_select==3:#눈사람만들래#ice
+                    if key[pygame.K_b]:
+                        ice3_timer,ice3_elapsed_time,ice3_elapsed_timer=0,0,0
+                    ice3_snowball(screen,0,skillimg[player1_select][3])
+                if player1_select==4:#토네이도#wind
+                    wind3_hurricane(screen,0,skillimg[player1_select][3],player_rect1,player_rect2)
+
+
+            #플레이어2
+            if is_skill_active[4]:#Q0U key[pygame.K_u] beeline_skill0(screen, player_number, img, qwer, player_rect1, player_rect2, angle, player1_select, player2_select)
+                beeline_skill0(screen, 1,skillimg[player1_select][0],skillimg[player2_select][0],0,player_rect1,player_rect2,(arrow_angle1,arrow_angle2),player1_select,player2_select)
+                # beeline_skill0(screen, 1,skillimg[player1_select][0],skillimg[player2_select][0],(arrow_angle1,arrow_angle2))
+            if is_skill_active[5]:#W1I key[pygame.K_i]
+                if player2_select==0:#fire
+                    if  key[pygame.K_i]:
+                        fire1_timer,fire1_elapsed_time,fire1_elapsed_timer=0,0,0
+                    skill_wall1(screen, 1,skillimg[player2_select][1],0)#fire1
+                if player2_select==1:#보류#lightning
+                    if key[pygame.K_i]:
+                        lightning2_timer,lightning2_elapsed_time,lightning2_elapsed_timer=0,0,0
+                    lightning1_beeline_teleport_end(screen,skillimg[player2_select][1],player_rect2,1,arrow_angle1,arrow_angle2,arrow_angle1_median,arrow_angle2_median)
+                if player2_select==2:#ground
+                    if  key[pygame.K_i]:
+                        ground1_timer,ground1_elapsed_time,ground1_elapsed_timer=0,0,0
+                    skill_wall1(screen, 1,skillimg[player2_select][1],2)
+                if player2_select==3:#ice
+                    if key[pygame.K_i] :
+                        ice1_timer,ice1_elapsed_time,ice1_elapsed_timer=0,0,0
+                    ice1_invincibility(screen, 1,skillimg[player2_select][2],player_img[3])
+                if player2_select==4:#wind2_player_increase_speed(screen, player_number,img,qwer,player_rect1,player_rect2):  #wind
+                    if key[pygame.K_i]:
+                        wind1_timer,wind1_elapsed_time,wind1_elapsed_timer=0,0,0
+                    wind1_protection_invalidation(screen, 1,skillimg[player2_select][1],player_rect1,player_rect2)
+            if is_skill_active[6]:#E2O key[pygame.K_o]
+                if player2_select==0:#fire fire2_player_increase_speed(screen, player_number, img, player_rect1, player_rect2):
+                    fire2_player_increase_speed(screen, 1,skillimg[player2_select][2],player_rect1,player_rect2)
+                if player2_select==1:#보류#lightning
+                     lightning2_glare(screen,1,skillimg[player2_select][2],player_rect1,player_rect2)
+                if player2_select==2:#ground
+                    ground2_invincibility(screen, 1,skillimg[player2_select][2],player_img[2])
+                if player2_select==3:#ice
+                    if key[pygame.K_o]:
+                        ice2_timer,ice2_elapsed_time,ice2_elapsed_timer=0,0,0
+                    ice2_ice_rink(screen,1,skillimg[player2_select][2])
+                if player2_select==4:#wind
+                    wind2_player_increase_speed(screen, 1,skillimg[player2_select][2],4,player_rect1,player_rect2)
+            if is_skill_active[7]:#R3P key[pygame.K_p]
+                if player2_select==0:#fire
+                    skill3_top_to_bottom(screen,1,skillimg[0][3],skillimg[1][3],player1_select,player2_select)
+                if player2_select==1:#lightning
+                    skill3_top_to_bottom(screen,1,skillimg[0][3],skillimg[1][3],player1_select,player2_select)
+                if player2_select==2:#ground
+                    if key[pygame.K_p]:
+                        ground3_timer,ground3_elapsed_time,ground3_elapsed_timer=0,0,0
+                    ground3_earthquake(screen,1,skillimg[player2_select][3])
+                if player2_select==3:#ice
+                    if key[pygame.K_p]:
+                        ice3_timer,ice3_elapsed_time,ice3_elapsed_timer=0,0,0
+                    ice3_snowball(screen,1,skillimg[player2_select][3])
+                if player2_select==4:#wind
+                    wind3_hurricane(screen,1,skillimg[player2_select][3],player_rect1,player_rect2)
+            player_rect1.center=(x_pos1,y_pos1)#플레이어1 위치 업데이트
+            player_rect2.center=(x_pos2,y_pos2)#플레이어2 위치 업데이트
+            # 화면 그리기
+            # screen.fill(WHITE)
+            screen.blit(rotated_half_circle1, rotated_rect1)
+            screen.blit(rotated_half_circle2, rotated_rect2)
+            
+            # timer_dis
+            # time_text1 = font.render(f"{timer_dis} 초",True,(255, 255, 255))
+            # screen.blit(time_text1,(screenw//2+40,screenh//2+40))
+            # crr=(pygame.time.get_ticks()-skill_data[0][0]['start_time'])//1000  # 현재 시간(ms 단위로 반환)
+            # time=font.render(str(crr//1000),True,WHITE,BLACK)  # 텍스트 생성, 배경은 None (두 번째 인자는 텍스트 색)
+            # screen.blit(time,[screenw//2,screenh//2])#텍스트를 화면에 블릿
+            
+            screen.blit(playerimg[0],player_rect1)#플레이어1 화면에 그리기
+            screen.blit(playerimg[1],player_rect2)#플레이어2 화면에 그리기
+        elif game_screen_index==7:
+            font=pygame.font.SysFont(font_type[4], 30,False,True)
+            game_screen_index=window_chat(screen,font,7,8,window_chat_background,False,True)
+        elif game_screen_index==8:
+            game_screen_index=window_chat(screen,font,9,9,window_chat_background,False,None)
+        else:
+            game_screen_index=window_chat(screen,font,9)
+        pygame.display.update()
+        clock.tick(fps)
+if __name__ == '__main__':
+    main()
